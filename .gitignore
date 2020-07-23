@@ -245,3 +245,16 @@ dmypy.json
 .history
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,visualstudiocode
+
+### Files ###
+*.csv
+*.txt
+*.npy
+*.npz
+*.json
+*.patch
+*.svg
+
+### Directories ###
+data/*
+results/*
