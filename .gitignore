@@ -254,6 +254,9 @@ dmypy.json
 *.json
 *.patch
 *.svg
+*.xml
+*.iml
+
 
 ### Directories ###
 data/*
