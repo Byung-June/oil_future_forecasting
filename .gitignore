@@ -248,6 +248,7 @@ dmypy.json
 
 ### Files ###
 *.csv
+*.xls
 *.txt
 *.npy
 *.npz
