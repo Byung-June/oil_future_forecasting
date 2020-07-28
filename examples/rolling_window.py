@@ -1,7 +1,10 @@
+# %%
 from oil_forecastor.model_selection import rolling_sample
+# from oil_forecastor.tsa_forecastor.arima import test_arima
 import pandas as pd
 import argparse
 
+# %%
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
