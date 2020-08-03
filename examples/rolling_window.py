@@ -15,7 +15,7 @@ def test_rolling_window(args):
     dataframe = pd.read_csv(args.data_path)
     X_train, X_test, y_train, y_test = rolling_sample(
         dataframe,
-        window_num=5, sample_num=52
+        window_num=5, sample_num=52, time=0
     )
 
 

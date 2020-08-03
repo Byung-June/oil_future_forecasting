@@ -20,6 +20,8 @@ def rolling_sample(data_, window_num, sample_num, time):
         data_y_train_time: time X sample X 1
         data_y_test_time: time X 1 X 1
     """
+    if data_.columns[0] == 'date':
+        data_ = data_.set_index('date')
     data_y = data_.iloc[:, 0]
     data_x = data_.iloc[:, 1:]
     if type(time) == str:
