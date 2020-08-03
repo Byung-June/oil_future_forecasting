@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from ..model_selection import rolling_sample
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, LinearRegression
@@ -7,26 +8,33 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.experimental import enable_hist_gradient_boosting  # noqa
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
+from functools import wraps  # for debugging purpose
 
 
 def rolling(func):
-    def train_model_wrapper(self):
+    @wraps(func)
+    def train_model_wrapper(self, *args, **kwargs):
         y_list = []
-        for time_idx in self.data['date'].iloc[self.start_time]:
-            train_test = self._data_helper(time_idx)
+        for i, time_idx in enumerate(pd.to_datetime(self.data['date'])):
+            if time_idx < self.start_time:
+                continue
+            train_test = self._data_helper(i)
             y_pred_test = func(self, train_test)
             y_list.append(y_pred_test)
         y_list = np.array(y_list)
         return y_list
-    return rolling
+    return train_model_wrapper
 
 
 class MLForecast():
     def __init__(self, data, n_windows, n_samples):
         self.data = data
-        self.start_time = n_windows + n_samples
+        self.n_windows, self.n_samples = n_windows, n_samples
+        start_time = n_windows + n_samples
+        self.start_time = pd.to_datetime(data['date'].iloc[start_time])
 
     def _data_helper(self, time_idx):
+
         data_tuple = rolling_sample(
                 self.data, self.n_windows, self.n_samples, time_idx
             )
@@ -37,7 +45,7 @@ class MLForecast():
         return train_test_split
 
     @rolling
-    def linear_reg(self, train_test):
+    def linear_reg(self, train_test=None):
         X_train, X_test, y_train, y_test = train_test
         linear_regressor = LinearRegression()
         linear_regressor.fit(X_train, y_train)
