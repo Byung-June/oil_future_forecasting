@@ -11,13 +11,18 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from functools import wraps  # for debugging purpose
+from tqdm import tqdm
+import multiprocessing
+
+n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
 def rolling(func):
     @wraps(func)
     def train_model_wrapper(self, *args, **kwargs):
         y_list = []
-        for i, time_idx in enumerate(pd.to_datetime(self.data['date'])):
+        sample_date = pd.to_datetime(self.data['date'].iloc[:-3])
+        for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
             train_test = self._data_helper(i)
@@ -34,6 +39,7 @@ class MLForecast():
         self.n_windows, self.n_samples = n_windows, n_samples
         start_time = n_windows + n_samples
         self.start_time = pd.to_datetime(data['date'].iloc[start_time])
+        self.verbose = 0
 
     def _data_helper(self, time_idx):
 
@@ -63,8 +69,8 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
             Lasso(),
-            verbose=0, param_grid={"alpha": np.logspace(-2, 1, 10)},
-            scoring='r2'
+            verbose=self.verbose, param_grid={"alpha": np.logspace(-2, 1, 10)},
+            scoring='r2', n_jobs=n_cpus
         )
         lasso_gridsearch.fit(X_train, y_train)
         y_pred = lasso_gridsearch.predict(X_test)
@@ -75,8 +81,9 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         dtr_gridsearch = GridSearchCV(
             DecisionTreeRegressor(),
-            verbose=2, param_grid={"max_depth": [i + 1 for i in range(20)]},
-            scoring='r2'
+            verbose=self.verbose,
+            param_grid={"max_depth": [i + 1 for i in range(20)]},
+            scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
@@ -87,12 +94,12 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         dtr_gridsearch = GridSearchCV(
             GradientBoostingRegressor(),
-            verbose=2,
+            verbose=self.verbose,
             param_grid={
                 'learning_rate': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0],
                 'max_depth': [3, 4, 5]
             },
-            scoring='r2', n_jobs=4
+            scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
@@ -103,12 +110,12 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         hgbr_gridsearch = GridSearchCV(
             HistGradientBoostingRegressor(),
-            verbose=2,
+            verbose=self.verbose,
             param_grid={
                 'learning_rate': [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0],
                 'max_depth': [3, 4, 5]
             },
-            scoring='r2', n_jobs=4
+            scoring='r2', n_jobs=n_cpus
         )
         hgbr_gridsearch.fit(X_train, y_train)
         y_pred = hgbr_gridsearch.predict(X_test)
@@ -146,12 +153,12 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         rfr_gridsearch = GridSearchCV(
             RandomForestRegressor(),
-            verbose=2, param_grid={
+            verbose=self.verbose, param_grid={
                 "max_depth": [4, 5, 6],
                 "min_samples_split": [2, 3, 4],
                 "min_samples_leaf": [1, 2, 3]
             },
-            scoring='r2', n_jobs=4
+            scoring='r2', n_jobs=n_cpus
         )
         rfr_gridsearch.fit(X_train, y_train)
         y_pred = rfr_gridsearch.predict(X_test)

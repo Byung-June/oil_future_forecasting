@@ -4,6 +4,7 @@ import datetime
 __all__ = ['rolling_sample']
 
 
+# Better naming???? rolling_train_test_split????
 def rolling_sample(data_, window_num, sample_num, time):
     """
     :param data_: Input data

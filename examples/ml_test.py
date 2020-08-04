@@ -1,3 +1,4 @@
+import numpy as np
 from oil_forecastor.ml_forecastor.forecast import MLForecast
 import pandas as pd
 import argparse
@@ -17,7 +18,7 @@ def evaluation(res):
     diff = (pred - test) ** 2
     numerator = diff.sum()
     denominator = (test ** 2).sum()
-    return numerator / denominator
+    return 1 - numerator / denominator
 
 
 if __name__ == '__main__':
@@ -25,9 +26,23 @@ if __name__ == '__main__':
 
     ml_forecast = MLForecast(exogenous, 5, 52)
     res_linear_reg = ml_forecast.linear_reg()
+    np.savez("res_linear_reg.npz", res_linear_reg)
+    print(evaluation(res_linear_reg))
     res_lasso = ml_forecast.lasso()
+    np.savez("res_lasso.npz", res_lasso)
+    print(evaluation(res_lasso))
     res_dtr = ml_forecast.decision_tree_reg()
+    np.savez("res_dtr.npz", res_dtr)
+    print(evaluation(res_dtr))
     res_gbr = ml_forecast.grad_boost_reg()
+    np.savez("res_gbr.npz", res_gbr)
+    print(evaluation(res_gbr))
     res_hgbr = ml_forecast.hist_grad_boost_reg()
+    np.savez("res_hgbr.npz", res_hgbr)
+    print(evaluation(res_hgbr))
     res_pcr = ml_forecast.pcr()
+    np.savez("res_pcr.npz", res_pcr)
+    print(evaluation(res_pcr))
     res_rfr = ml_forecast.rand_forest_reg()
+    np.savez("res_rfr.npz", res_rfr)
+    print(evaluation(res_rfr))
