@@ -1,7 +1,9 @@
 import numpy as np
 import datetime
+from sklearn.tree import DecisionTreeRegressor
+from pmdarima.arima.utils import ndiffs
 
-__all__ = ['rolling_sample']
+__all__ = ['rolling_sample', 'get_features', 'adf_test']
 
 
 def rolling_sample(data_, window_num, sample_num, time):
@@ -46,3 +48,29 @@ def rolling_sample(data_, window_num, sample_num, time):
         data_x_train, data_x_test,
         data_y_train, data_y_test
     )
+
+
+def get_features(X_train, y_train, n_features=20):
+    ranking = np.zeros([X_train.shape[1], 2])
+    model = DecisionTreeRegressor()
+    model.fit(X_train, y_train)
+    for i, value in enumerate(model.feature_importances_):
+        ranking[i, 0] = i
+        ranking[i, 1] = -value
+    ranking = ranking[ranking[:, 1].argsort()]
+    ranking[:, 1] = - ranking[:, 1]
+    return ranking[:n_features, :], np.array(ranking[:n_features, 0], dtype=np.int)
+
+
+def adf_test(data_):
+    '''
+    :param data_: data to test differencing order
+    :return:
+        n_adf: ADF test
+        n_kpss: KPSS test
+        n_pp: PP test
+    '''
+    n_adf = ndiffs(data_, test='adf')
+    n_kpss = ndiffs(data_, test='kpss')
+    n_pp = ndiffs(data_, test='pp')
+    return n_adf, n_kpss, n_pp
