@@ -33,8 +33,8 @@ def rolling(func):
                 continue
             train_test = self._data_helper(i, n_features, method)
             y_pred_test = func(self, train_test, n_features, method)
-            y_list.append(y_pred_test)
-        y_list = np.array(y_list)
+            y_list.append(np.array(y_pred_test).reshape(-1, 1))
+        y_list = np.concatenate(y_list, axis=-1)
         return y_list
     return train_model_wrapper
 
@@ -79,7 +79,7 @@ class MLForecast():
     def lasso(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
-            Lasso(),
+            Lasso(max_iter=3000, tol=1e-2, selection='random'),
             verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 60)},
             scoring='r2', n_jobs=n_cpus
         )
