@@ -26,15 +26,18 @@ def rolling(func):
         self,
         n_features=np.inf, method=None, *args, **kwargs
     ):
-        y_list = []
-        sample_date = pd.to_datetime(self.data['date'].iloc[:-3])
+        y_pred_list, y_test_list = [], []
+        sample_date = pd.to_datetime(self.data.index[:-3])
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
             train_test = self._data_helper(i, n_features, method)
-            y_pred_test = func(self, train_test, n_features, method)
-            y_list.append(np.array(y_pred_test).reshape(-1, 1))
-        y_list = np.concatenate(y_list, axis=-1)
+            y_pred, y_test = func(self, train_test, n_features, method)
+            y_pred_list.append(y_pred)
+            y_test_list.append(y_test)
+        y_pred_list = np.array(y_pred_list).reshape(-1, 1)
+        y_test_list = np.array(y_test_list).reshape(-1, 1)
+        y_list = np.concatenate([y_pred_list, y_test_list], axis=-1)
         return y_list
     return train_model_wrapper
 
@@ -44,7 +47,7 @@ class MLForecast():
         self.data = data
         self.n_windows, self.n_samples = n_windows, n_samples
         start_time = n_windows + n_samples
-        self.start_time = pd.to_datetime(data['date'].iloc[start_time])
+        self.start_time = pd.to_datetime(data.index[start_time])
         self.verbose = 0
 
     def _data_helper(self, time_idx, n_features, method):
@@ -79,7 +82,7 @@ class MLForecast():
     def lasso(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
-            Lasso(max_iter=3000, tol=1e-2, selection='random'),
+            Lasso(max_iter=3000, tol=5e-2, selection='random'),
             verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 60)},
             scoring='r2', n_jobs=n_cpus
         )
