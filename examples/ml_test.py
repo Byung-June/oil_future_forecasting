@@ -10,7 +10,7 @@ parser.add_argument(
     default='../data/ml_data_input_normalized_stationary.csv', type=str,
     help="path to data"
 )
-parser.add_argument('--ignore-warnings', default=False, action='store_true')
+parser.add_argument('--ignore-warnings', default=True, action='store_false')
 parser.add_argument('--n-windows', default=5, type=int)
 parser.add_argument('--n-samples', default=52, type=int)
 args = parser.parse_args()
@@ -45,13 +45,13 @@ if __name__ == '__main__':
     res_lasso = ml_forecast.lasso()
     np.savez(make_name("res_lasso"), res_lasso)
     print(evaluation(res_lasso))
-    res_dtr = ml_forecast.decision_tree_reg()
     res_svr = ml_forecast.svr(n_features=20, method='f-classif')
     np.savez(make_name("res_svr"), res_svr)
     print(evaluation(res_svr))
     res_kr = ml_forecast.kernel_ridge(n_features=20, method='f-classif')
     np.savez(make_name("res_kr"), res_kr)
     print(evaluation(res_kr))
+    res_dtr = ml_forecast.decision_tree_reg()
     np.savez(make_name("res_dtr"), res_dtr)
     print(evaluation(res_dtr))
     res_gbr = ml_forecast.grad_boost_reg()
