@@ -8,7 +8,7 @@ from tqdm import tqdm
 from multiprocessing import Pool
 
 from oil_forecastor.tsa_forecastor.tsa_models import *
-from oil_forecastor.model_selection._utility import rolling_sample, get_features, adf_test
+from oil_forecastor.model_selection._utility import rolling_train_test_split, get_features, adf_test
 
 
 # %%
@@ -23,6 +23,11 @@ class GenModel:
         self._model = None
 
     def gen_model(self, model, process_num=4):
+        """
+        :param model: model that you want to run
+        :param process_num: number of process
+        :return:
+        """
         self._model = model
         # list_test = range(self._window_num + self._sample_num - 2, len(self._data) - 1)
         list_test = range(self._window_num + self._sample_num - 2, self._window_num + self._sample_num + 2)
@@ -33,7 +38,14 @@ class GenModel:
         return result
 
     def pool_func(self, t_):
-        x_train_, x_test_, y_train_, y_test_ = rolling_sample(
+        """
+        :param t_: time spot for each analysis
+        :return: single time-series analysis result,
+            including forecasting, real value, params of the model
+        """
+        garch_models = ['arx-garch', 'arx-gjr-garch', 'arx-tgarch']
+
+        x_train_, x_test_, y_train_, y_test_ = rolling_train_test_split(
             self._data,
             window_num=self._window_num, sample_num=self._sample_num, time=t_
         )
@@ -42,6 +54,14 @@ class GenModel:
                 x_train_, x_test_, y_train_, y_test_,
                 self._data.index[t_+1], self._forecast_period, self._feature_num
             )
+
+        elif self._model in garch_models:
+            return garch(
+                x_train_, x_test_, y_train_, y_test_,
+                self._data.index[t_ + 1], self._forecast_period, self._feature_num,
+                model=self._model
+            )
+
         else:
             return t_
 
@@ -52,8 +72,8 @@ if __name__ == '__main__':
     # print(data)
 
     # arima test
-    g = GenModel(data, window_num=5, sample_num=52, forecast_period=1, feature_num=2)
-    arma = g.gen_model('arima')
-    print('result', arma)
-    arma2 = g.gen_model('arima', 2)
-    print('result', arma2)
+    g = GenModel(data, window_num=5, sample_num=52, forecast_period=1, feature_num=10)
+    # arma = g.gen_model('arima')
+    # print('result', arma)
+    arma2 = g.gen_model('arx-garch', 2)
+    print('result', arma2[0])
