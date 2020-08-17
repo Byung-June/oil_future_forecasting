@@ -1,12 +1,13 @@
 import numpy as np
+import pandas as pd
 import datetime
 from sklearn.tree import DecisionTreeRegressor
 from pmdarima.arima.utils import ndiffs
 
-__all__ = ['rolling_sample', 'get_features', 'adf_test']
+__all__ = ['rolling_train_test_split', 'get_features', 'adf_test']
 
 
-def rolling_sample(data_, window_num, sample_num, time):
+def rolling_train_test_split(data_, window_num, sample_num, time):
     """
     :param data_: Input data
     :param window_num: number of window in one sample
@@ -62,6 +63,14 @@ def get_features(X_train, y_train, n_features=20):
     return ranking[:n_features, :], np.array(ranking[:n_features, 0], dtype=np.int)
 
 
+def flatten_x_train(x_train_):
+    return pd.DataFrame([x.to_numpy().flatten() for x in x_train_], index=[x.index[-1] for x in x_train_])
+
+
+def flatten_x_test(x_test_):
+    return pd.DataFrame([x_test_.to_numpy().flatten()], index=[x_test_.index[-1]])
+
+
 def adf_test(data_):
     '''
     :param data_: data to test differencing order
@@ -74,3 +83,27 @@ def adf_test(data_):
     n_kpss = ndiffs(data_, test='kpss')
     n_pp = ndiffs(data_, test='pp')
     return n_adf, n_kpss, n_pp
+
+
+if __name__ == '__main__':
+
+    idx = pd.date_range('2018-01-01', periods=7, freq='D')
+    ts = pd.DataFrame(range(len(idx)), index=idx, columns=['value1'])
+    ts2 = pd.DataFrame(range(1, len(idx) + 1), index=idx, columns=['value2'])
+    ts3 = pd.DataFrame(range(2, len(idx) + 2), index=idx, columns=['value3'])
+    ts = pd.merge(ts, ts2, left_index=True, right_index=True)
+    ts = pd.merge(ts, ts3, left_index=True, right_index=True)
+    print(ts)
+    data_x_train, data_x_test, data_y_train, data_y_test = rolling_train_test_split(ts, 2, 4, '2018-01-05')
+    print('x_train', type(data_x_train), data_x_train, data_x_train.append(data_x_test))
+    print('x_train2', type(data_x_train[-1]), data_x_train[-1], data_x_train[-1].index[-1])
+    print('x_test', type(data_x_test), data_x_test)
+    print('y_train', type(data_y_train), data_y_train, data_y_train.append(data_y_test))
+    print('y_test', type(data_y_test), data_y_test)
+    print('done!')
+
+    print('xtrain flatten', flatten_x_train(data_x_train))
+    a, b = get_features(flatten_x_train(data_x_train), data_y_train, n_features=2)
+    print('features', a, b, flatten_x_train(data_x_train).iloc[:, b])
+    a, b = get_features(flatten_x_train(data_x_train), data_y_train, n_features=3)
+    print('features', a, b, flatten_x_train(data_x_train).iloc[:, b])
