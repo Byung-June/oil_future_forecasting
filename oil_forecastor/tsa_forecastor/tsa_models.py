@@ -11,8 +11,8 @@ def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
     x_train_pos = []
     if feature_num > 0:
         _, x_train_pos = get_features(flatten_x_train(x_train), y_train, n_features=feature_num)
-        x_train = flatten_x_train(x_train)[:, x_train_pos]
-        x_test = flatten_x_test(x_test)[:, x_train_pos]
+        x_train = flatten_x_train(x_train).iloc[:, x_train_pos]
+        x_test = flatten_x_test(x_test).iloc[:, x_train_pos]
 
         arima_train = pm.auto_arima(y_train, exogenous=x_train, d=d_,
                                     seasonal=False, with_intercept=True, information_criterion='bic', trace=False,

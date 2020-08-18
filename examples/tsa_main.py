@@ -1,21 +1,28 @@
 # %%
-import os
-import sys
-import time
-
-import pandas as pd
 from tqdm import tqdm
 from multiprocessing import Pool
 
 from oil_forecastor.tsa_forecastor.tsa_models import *
-from oil_forecastor.model_selection._utility import rolling_train_test_split, get_features, adf_test
+from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
 
 
 # %%
 
 class GenModel:
-    def __init__(self, data, window_num, sample_num, forecast_period, feature_num):
-        self._data = data
+    def __init__(self, data, window_num, sample_num, forecast_period, feature_num, denoise=None):
+        """
+        :param data:
+        :param window_num:
+        :param sample_num:
+        :param forecast_period:
+        :param feature_num: feature selection number
+        :param denoise:
+             'wavelet_db1',
+             'wavelet_db2',
+             'bilateral',
+             'moving_average'
+        """
+        self._data = denoising_func(data, filter=denoise)
         self._window_num = window_num
         self._sample_num = sample_num
         self._forecast_period = forecast_period
@@ -29,12 +36,13 @@ class GenModel:
         :return:
         """
         self._model = model
-        # list_test = range(self._window_num + self._sample_num - 2, len(self._data) - 1)
-        list_test = range(self._window_num + self._sample_num - 2, self._window_num + self._sample_num + 2)
+        list_test = range(self._window_num + self._sample_num - 2, len(self._data) - 1)
+        # list_test = range(self._window_num + self._sample_num - 2, self._window_num + self._sample_num + 6)
         pool = Pool(processes=process_num)
         result = pool.map(self.pool_func, tqdm(list_test))
         pool.close()
         pool.join()
+
         return result
 
     def pool_func(self, t_):
@@ -72,8 +80,12 @@ if __name__ == '__main__':
     # print(data)
 
     # arima test
-    g = GenModel(data, window_num=5, sample_num=52, forecast_period=1, feature_num=10)
-    # arma = g.gen_model('arima')
-    # print('result', arma)
-    arma2 = g.gen_model('arx-garch', 2)
-    print('result', arma2[0])
+    input_w = 5
+    input_s = 250
+    input_f = 10
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)
+    # arma2 = g.gen_model('arx-garch', 2)
+    # print('result', arma2[0])
