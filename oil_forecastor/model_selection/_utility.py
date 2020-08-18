@@ -3,8 +3,15 @@ import pandas as pd
 import datetime
 from sklearn.tree import DecisionTreeRegressor
 from pmdarima.arima.utils import ndiffs
+from skimage.restoration import denoise_bilateral, denoise_wavelet
+from matplotlib import pyplot as plt
 
-__all__ = ['rolling_train_test_split', 'get_features', 'adf_test']
+
+__all__ = ['rolling_train_test_split',
+           'get_features', 'adf_test',
+           'flatten_x_train',
+           'flatten_x_test',
+           'denoising_func']
 
 
 def rolling_train_test_split(data_, window_num, sample_num, time):
@@ -85,6 +92,31 @@ def adf_test(data_):
     return n_adf, n_kpss, n_pp
 
 
+def denoising_func(data_, filter):
+    if filter == 'wavelet_db1':
+        data_['y_pred'] = denoise_wavelet(np.array(data_['y_pred']), wavelet='db1', mode='soft', wavelet_levels=2,
+                                          multichannel=True, rescale_sigma=True)
+    elif filter == 'wavelet_db2':
+        data_['y_pred'] = denoise_wavelet(np.array(data_['y_pred']), wavelet='db2', mode='soft', wavelet_levels=2,
+                                          multichannel=True, rescale_sigma=True)
+    elif filter == 'bilateral':
+        data_['y_pred'] = np.exp(
+            denoise_bilateral(
+                np.array(
+                    [x * np.log(1 + abs(x)) if x > 0 else - x * np.log(1 + abs(x)) for x in np.array(data_['y_pred'])]
+                ),
+                sigma_spatial=1000, multichannel=False)
+        ) - 1
+
+    elif filter == 'moving_average':
+        data_['y_pred'] = data_.y_pred.rolling(window=5).mean()
+
+    else:
+        pass
+
+    return data_
+
+
 if __name__ == '__main__':
 
     idx = pd.date_range('2018-01-01', periods=7, freq='D')
@@ -107,3 +139,56 @@ if __name__ == '__main__':
     print('features', a, b, flatten_x_train(data_x_train).iloc[:, b])
     a, b = get_features(flatten_x_train(data_x_train), data_y_train, n_features=3)
     print('features', a, b, flatten_x_train(data_x_train).iloc[:, b])
+
+    # data = pd.read_csv('data_input_normalized_stationary.csv', index_col=0)
+    # data = data.iloc[:, [0]]
+    # print(data)
+    #
+    # denoised_wavelet = denoise_wavelet(np.array(data), wavelet='db2', mode='soft', wavelet_levels=2, multichannel=True,
+    #                                    rescale_sigma=True)
+    # print(denoised_wavelet)
+    #
+    # denoised_wavelet2 = denoise_wavelet(np.array(data), wavelet='db1', mode='soft', wavelet_levels=2, multichannel=True,
+    #                                     rescale_sigma=True)
+    # print(denoised_wavelet2)
+    #
+    # log_data = np.array([x * np.log(1 + abs(x)) if x > 0 else - x * np.log(1 + abs(x)) for x in np.array(data)])
+    # print(log_data)
+    # denoised_bilateral = np.exp(denoise_bilateral(log_data, sigma_spatial=1000, multichannel=False)) - 1
+    # print(denoised_bilateral)
+    #
+    # denoised_ma = data.y_pred.rolling(window=5).mean()
+    #
+    # # plt.plot(data[:1000])
+    # # plt.plot(denoised_wavelet[:1000])
+    # # plt.plot(denoised_wavelet2[:1000])
+    # # plt.plot(denoised_bilateral[:1000])
+    # # plt.plot(denoised_ma[:1000])
+    # # plt.show()
+    #
+    # data['wavelet'] = denoised_wavelet
+    # data['wavelet2'] = denoised_wavelet2
+    # data['bilateral'] = denoised_bilateral
+    # data['moving_average'] = denoised_ma
+    #
+    # data['price'] = data['y_pred'] + 1
+    # data['price'] = data['price'].cumprod()
+    # data['price_wavelet'] = data['wavelet'] + 1
+    # data['price_wavelet'] = data['price_wavelet'].cumprod()
+    # data['price_wavelet2'] = data['wavelet2'] + 1
+    # data['price_wavelet2'] = data['price_wavelet2'].cumprod()
+    # data['price_bilateral'] = data['bilateral'] + 1
+    # data['price_bilateral'] = data['price_bilateral'].cumprod()
+    # data['price_moving_average'] = data['moving_average'] + 1
+    # data['price_moving_average'] = data['price_moving_average'].cumprod()
+    #
+    # plt.plot(data['price'][:1000])
+    # plt.plot(data['price_wavelet'][:1000])
+    # plt.plot(data['price_wavelet2'][:1000])
+    # plt.plot(data['price_bilateral'][:1000])
+    # plt.plot(data['price_moving_average'][:1000])
+    # plt.show()
+    #
+    #
+    # print(data)
+    # data.to_csv('denoise.csv')
