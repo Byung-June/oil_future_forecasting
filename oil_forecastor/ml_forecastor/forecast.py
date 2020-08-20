@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.kernel_ridge import KernelRidge
-from ..model_selection import rolling_sample
+from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
 
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
@@ -26,33 +26,34 @@ def rolling(func):
         self,
         n_features=np.inf, method=None, *args, **kwargs
     ):
-        y_pred_list, y_test_list = [], []
-        sample_date = pd.to_datetime(self.data.index[:-3])
+        y_pred_list = []
+        sample_date = pd.to_datetime(
+            self.data.index[:self.end_time_idx]
+        )
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
+
             train_test = self._data_helper(i, n_features, method)
-            y_pred, y_test = func(self, train_test, n_features, method)
+            y_pred = func(self, train_test, n_features, method)
             y_pred_list.append(y_pred)
-            y_test_list.append(y_test)
         y_pred_list = np.array(y_pred_list).reshape(-1, 1)
-        y_test_list = np.array(y_test_list).reshape(-1, 1)
-        y_list = np.concatenate([y_pred_list, y_test_list], axis=-1)
-        return y_list
+        return y_pred_list
     return train_model_wrapper
 
 
 class MLForecast():
-    def __init__(self, data, n_windows, n_samples):
+    def __init__(self, data, n_windows, n_samples, start_time, end_time):
         self.data = data
         self.n_windows, self.n_samples = n_windows, n_samples
-        start_time = n_windows + n_samples
         self.start_time = pd.to_datetime(data.index[start_time])
+        self.end_time_idx = end_time
+        self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
 
     def _data_helper(self, time_idx, n_features, method):
 
-        data_tuple = rolling_sample(
+        data_tuple = rolling_train_test_split(
                 self.data, self.n_windows, self.n_samples, time_idx
             )
         X_train = np.stack(
@@ -76,7 +77,7 @@ class MLForecast():
         linear_regressor = LinearRegression()
         linear_regressor.fit(X_train, y_train)
         y_pred = linear_regressor.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def lasso(self, train_test, n_features=np.inf, method=None):
@@ -88,7 +89,7 @@ class MLForecast():
         )
         lasso_gridsearch.fit(X_train, y_train)
         y_pred = lasso_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def decision_tree_reg(self, train_test, n_features=np.inf, method=None):
@@ -101,7 +102,7 @@ class MLForecast():
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def grad_boost_reg(self, train_test, n_features=np.inf, method=None):
@@ -117,7 +118,7 @@ class MLForecast():
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def hist_grad_boost_reg(self, train_test, n_features=np.inf, method=None):
@@ -133,7 +134,7 @@ class MLForecast():
         )
         hgbr_gridsearch.fit(X_train, y_train)
         y_pred = hgbr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def pcr(self, train_test, n_features=np.inf, method=None):
@@ -160,7 +161,7 @@ class MLForecast():
         )
         X_test_reduced = pca.transform(X_test)[:, :n_components_pcr]
         y_pred = linear_regressor_pcr.predict(X_test_reduced)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def rand_forest_reg(self, train_test, n_features=np.inf, method=None):
@@ -176,7 +177,7 @@ class MLForecast():
         )
         rfr_gridsearch.fit(X_train, y_train)
         y_pred = rfr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def svr(self, train_test, n_features=np.inf, method=None):
@@ -192,7 +193,7 @@ class MLForecast():
         )
         svr_gridsearch.fit(X_train, y_train)
         y_pred = svr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
 
     @rolling
     def kernel_ridge(self, train_test, n_features=np.inf, method=None):
@@ -206,4 +207,4 @@ class MLForecast():
         )
         kr_gridsearch.fit(X_train, y_train)
         y_pred = kr_gridsearch.predict(X_test)
-        return y_pred, y_test
+        return y_pred
