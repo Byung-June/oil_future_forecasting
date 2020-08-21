@@ -24,10 +24,10 @@ def rolling_train_test_split(data_, window_num, sample_num, time):
         if type(time) == str: %Y-%m-%d format -> converted to int in algorithm
         if type(time) == Datetime -> converted to int in algorithm
     :return:
-        data_x_train_time: time X sample X (window X variable Dataframe)
-        data_x_test_time: time X 1 X (window X variable Dataframe)
-        data_y_train_time: time X sample X 1
-        data_y_test_time: time X 1 X 1
+        data_x_train_time: sample X (window X variable Dataframe)
+        data_x_test_time: 1 X (window X variable Dataframe)
+        data_y_train_time: sample X 1
+        data_y_test_time: 1 X 1
     """
     if data_.columns[0] == 'date':
         data_ = data_.set_index('date')
@@ -104,13 +104,13 @@ def adf_test(data_):
 def denoising_func(data_, filter):
     if filter == 'wavelet_db1':
         data_['y_test'] = denoise_wavelet(
-            np.array(data_['y_test']),
+            np.array(data_['y_test']).reshape([-1, 1]),
             wavelet='db1', mode='soft', wavelet_levels=2,
             multichannel=True, rescale_sigma=True
         )
     elif filter == 'wavelet_db2':
         data_['y_test'] = denoise_wavelet(
-            np.array(data_['y_test']),
+            np.array(data_['y_test']).reshape([-1, 1]),
             wavelet='db2', mode='soft', wavelet_levels=2,
             multichannel=True, rescale_sigma=True
         )
