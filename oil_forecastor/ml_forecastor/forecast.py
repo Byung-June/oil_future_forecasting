@@ -171,7 +171,7 @@ class MLForecast():
             verbose=self.verbose, param_grid={
                 "max_depth": [2, 3, 4, 5, 6],
                 "min_samples_split": [2, 3, 4],
-                "min_samples_leaf": [1, 2, 3]
+                "min_samples_leaf": [2, 3]
             },
             scoring='r2', n_jobs=n_cpus
         )

@@ -122,9 +122,13 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     np.savez(make_name("res_pcr", arg_tuple), res_pcr)
     print("pcr ", evaluation(y_test_before_filtered, res_pcr))
 
-    res_rfr = ml_forecast.rand_forest_reg()
-    np.savez(make_name("res_rfr", arg_tuple), res_rfr)
-    print("rfr ", evaluation(y_test_before_filtered, res_rfr))
+    try:
+        res_rfr = ml_forecast.rand_forest_reg()
+        np.savez(make_name("res_rfr", arg_tuple), res_rfr)
+        print("rfr ", evaluation(y_test_before_filtered, res_rfr))
+    except Exception as e:
+        print("rfr caused error")
+        print(e)
 
 
 if __name__ == '__main__':
