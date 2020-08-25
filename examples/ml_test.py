@@ -15,10 +15,10 @@ parser.add_argument(
     help="path to data"
 )
 parser.add_argument('--filter-method',
-                    default='moving_average', type=str)
+                    default='moving_average', type=str, action='append')
 parser.add_argument('--ignore-warnings', default=True, action='store_false')
-parser.add_argument('--n-windows', default=5, type=int)
-parser.add_argument('--n-samples', default=52, type=int)
+parser.add_argument('--n-windows', default=5, type=int, action='append')
+parser.add_argument('--n-samples', default=52, type=int, action='append')
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
@@ -75,35 +75,26 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     ml_forecast = MLForecast(
         exogenous, n_windows, n_samples, start_time, end_time)
 
-    print("rfr")
-    res_rfr = ml_forecast.rand_forest_reg()
-    np.savez(make_name("res_rfr", arg_tuple), res_rfr)
-    print(evaluation(y_test_before_filtered, res_rfr))
-
-    print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method='f-classif'
     )
     np.savez(
         make_name("res_linear_reg", arg_tuple), res_linear_reg)
-    print(evaluation(y_test_before_filtered, res_linear_reg))
+    print("linear ", evaluation(y_test_before_filtered, res_linear_reg))
 
-    print("lasso")
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method='f-classif'
     )
     np.savez(make_name("res_lasso", arg_tuple), res_lasso)
-    print(evaluation(y_test_before_filtered, res_lasso))
+    print("lasso ", evaluation(y_test_before_filtered, res_lasso))
 
-    print("svr")
     if n_features > 100:
         res_svr = ml_forecast.svr(n_features=50, method='f-classif')
     else:
         res_svr = ml_forecast.svr(n_features=n_features, method='f-classif')
     np.savez(make_name("res_svr", arg_tuple), res_svr)
-    print(evaluation(y_test_before_filtered, res_svr))
+    print("svr ", evaluation(y_test_before_filtered, res_svr))
 
-    print("kernel ridge")
     if n_features > 100:
         res_kr = ml_forecast.kernel_ridge(n_features=50, method='f-classif')
     else:
@@ -111,29 +102,29 @@ def main(exogenous, filter_method, n_features, sw_tuple):
             n_features=n_features, method='f-classif'
         )
     np.savez(make_name("res_kr", arg_tuple), res_kr)
-    print(evaluation(y_test_before_filtered, res_kr))
+    print("kr ", evaluation(y_test_before_filtered, res_kr))
 
-    print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method='f-classif'
     )
     np.savez(make_name("res_dtr", arg_tuple), res_dtr)
-    print(evaluation(y_test_before_filtered, res_dtr))
+    print("dtr ", evaluation(y_test_before_filtered, res_dtr))
 
-    print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
     np.savez(make_name("res_gbr", arg_tuple), res_gbr)
-    print(evaluation(y_test_before_filtered, res_gbr))
+    print("gbr ", evaluation(y_test_before_filtered, res_gbr))
 
-    print("hgbr")
     res_hgbr = ml_forecast.hist_grad_boost_reg()
     np.savez(make_name("res_hgbr", arg_tuple), res_hgbr)
-    print(evaluation(y_test_before_filtered, res_hgbr))
+    print("hgbr ", evaluation(y_test_before_filtered, res_hgbr))
 
-    print("pcr")
     res_pcr = ml_forecast.pcr()
     np.savez(make_name("res_pcr", arg_tuple), res_pcr)
-    print(evaluation(y_test_before_filtered, res_pcr))
+    print("pcr ", evaluation(y_test_before_filtered, res_pcr))
+
+    res_rfr = ml_forecast.rand_forest_reg()
+    np.savez(make_name("res_rfr", arg_tuple), res_rfr)
+    print("rfr ", evaluation(y_test_before_filtered, res_rfr))
 
 
 if __name__ == '__main__':

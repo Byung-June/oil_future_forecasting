@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pmdarima as pm
 from ..model_selection._utility import adf_test, get_features, flatten_x_train, flatten_x_test
+from ..feature_selection._feature_selector import _f_classif_square_selector
 from arch.univariate import arch_model
 import datetime as dt
 
@@ -10,9 +11,18 @@ def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
     d_ = max(adf_test(y_train))
     x_train_pos = []
     if feature_num > 0:
-        _, x_train_pos = get_features(flatten_x_train(x_train), y_train, n_features=feature_num)
-        x_train = flatten_x_train(x_train).iloc[:, x_train_pos]
-        x_test = flatten_x_test(x_test).iloc[:, x_train_pos]
+        # _, x_train_pos = get_features(flatten_x_train(x_train), y_train, n_features=feature_num)
+        # x_train = flatten_x_train(x_train).iloc[:, x_train_pos]
+        # x_test = flatten_x_test(x_test).iloc[:, x_train_pos]
+        x_train = flatten_x_train(x_train)
+        x_test = flatten_x_test(x_test)
+        x_train, x_test, y_train, y_test = _f_classif_square_selector(
+            np.array(x_train),
+            np.array(x_test),
+            y_train,
+            y_test,
+            feature_num
+        )
 
         arima_train = pm.auto_arima(y_train, exogenous=x_train, d=d_,
                                     seasonal=False, with_intercept=True, information_criterion='bic', trace=False,
@@ -23,8 +33,6 @@ def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
                                     suppress_warnings=True, stepwise=False, error_action='ignore')
     params = arima_train.params()
     orders = arima_train.get_params()['order']
-    # print('params: ', params, len(params), orders)
-
     pred, conf_int = arima_train.predict(n_periods=forecast_period, exogenous=x_test, return_conf_int=True)
     return [t_, pred[0], y_test, x_train_pos, params, orders, conf_int[0]]
 

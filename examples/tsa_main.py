@@ -78,14 +78,45 @@ class GenModel:
 if __name__ == '__main__':
     data = pd.read_csv('../data/data_input_normalized_stationary.csv', index_col=0)
     # print(data)
+    import warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     # arima test
     input_w = 5
-    input_s = 250
+    input_s = 15
     input_f = 10
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='wavelet_db1')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
-    # arma2 = g.gen_model('arx-garch', 2)
-    # print('result', arma2[0])
+
+    # arima test
+    input_w = 22
+    input_s = 45
+    input_f = 10
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='wavelet_db1')
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)
+
+    # arima test
+    input_w = 5
+    input_s = 15
+    input_f = 10
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='moving_average')
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)
+
+    # arima test
+    input_w = 22
+    input_s = 45
+    input_f = 10
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='moving_average')
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)
