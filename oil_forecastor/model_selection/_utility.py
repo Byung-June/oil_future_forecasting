@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
 import datetime
+from sklearn.tree import DecisionTreeRegressor
 from pmdarima.arima.utils import ndiffs
 from skimage.restoration import denoise_bilateral, denoise_wavelet
 
 
 __all__ = ['rolling_train_test_split',
-           'adf_test',
+           'get_features', 'adf_test',
            'flatten_x_train',
            'flatten_x_test',
            'denoising_func']
@@ -68,6 +69,19 @@ def rolling_train_test_split(data_, window_num, sample_num, time):
     y_test = np.array(data_tuple[3])
 
     return X_train, X_test, y_train, y_test
+
+
+def get_features(X_train, y_train, n_features=20):
+    ranking = np.zeros([X_train.shape[1], 2])
+    model = DecisionTreeRegressor()
+    model.fit(X_train, y_train)
+    for i, value in enumerate(model.feature_importances_):
+        ranking[i, 0] = i
+        ranking[i, 1] = -value
+    ranking = ranking[ranking[:, 1].argsort()]
+    ranking[:, 1] = - ranking[:, 1]
+    return ranking[:n_features, :],\
+        np.array(ranking[:n_features, 0], dtype=np.int)
 
 
 def flatten_x_train(x_train_):
