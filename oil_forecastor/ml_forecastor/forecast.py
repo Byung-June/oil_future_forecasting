@@ -56,14 +56,7 @@ class MLForecast():
         data_tuple = rolling_train_test_split(
                 self.data, self.n_windows, self.n_samples, time_idx
             )
-        X_train = np.stack(
-            [elt.values for elt in data_tuple[0]], axis=-1
-        )
-        X_test = np.expand_dims(data_tuple[1].values, axis=-1)
-        X_train = X_train.reshape(X_train.shape[-1], -1)
-        X_test = X_test.reshape(X_test.shape[-1], -1)
-        y_train = np.array(data_tuple[2])
-        y_test = np.array(data_tuple[3])
+        X_train, X_test, y_train, y_test = data_tuple
 
         if n_features < np.inf:
             X_train, X_test, y_train, y_test = selector(
