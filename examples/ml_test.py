@@ -55,25 +55,27 @@ def make_name(name, arg_tuple):
 
 
 def main(exogenous, filter_method, n_features, sw_tuple):
+    # you are reusing exogenous....
     y_test_before_filtered = copy.deepcopy(exogenous['y_test'])
     if filter_method != 'none':
         filtered = denoising_func(exogenous, filter_method)
-        exogenous = filtered
+    else:
+        filtered = exogenous
 
     n_samples, n_windows = sw_tuple
     start_time = n_windows + n_samples - 2
-    end_time = len(exogenous) - 1
+    end_time = len(filtered) - 1
     arg_tuple = tuple([n_windows, n_samples, n_features, filter_method])
 
     y_test_before_filtered = y_test_before_filtered[start_time:end_time].values
     if filter_method != 'none':
-        y_test_filtered = exogenous['y_test'][start_time:end_time].values
+        y_test_filtered = filtered['y_test'][start_time:end_time].values
         print(
             evaluation(y_test_before_filtered, y_test_filtered)
         )
 
     ml_forecast = MLForecast(
-        exogenous, n_windows, n_samples, start_time, end_time)
+        filtered, n_windows, n_samples, start_time, end_time)
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
@@ -163,4 +165,5 @@ if __name__ == '__main__':
     for filter_method in ['moving_average', 'none', 'wavelet_db1']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
-                main(exogenous, filter_method, n_features, sw_tuple)
+                copied = copy.deepcopy(exogenous)
+                main(copied, filter_method, n_features, sw_tuple)

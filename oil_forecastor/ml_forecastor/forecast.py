@@ -108,7 +108,7 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 'max_depth': [2, 3, 5, 10],
-                'n_estimators': [100, 200, 400]
+                'n_estimators': [20, 50, 100]
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -123,8 +123,7 @@ class MLForecast():
             HistGradientBoostingRegressor(),
             verbose=self.verbose,
             param_grid={
-                'max_depth': [2, 3, 5, 10],
-                'min_samples_leaf': [3, 5, 10]
+                'max_depth': [2, 3, 5, 10]
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -135,7 +134,7 @@ class MLForecast():
     @rolling
     def pcr(self, train_test, n_features=np.inf, method=None):
         # https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html#sphx-glr-auto-examples-decomposition-plot-pca-vs-fa-model-selection-py
-        n_components = np.arange(1, 21)
+        n_components = np.arange(1, 2)
         X_train, X_test, y_train, y_test = train_test
         linear_regressor = LinearRegression()
         pcr_scores = []
@@ -166,7 +165,7 @@ class MLForecast():
             RandomForestRegressor(),
             verbose=self.verbose, param_grid={
                 "max_depth": [2, 3, 5, 10],
-                "min_samples_leaf": [1, 3, 5, 10]
+                "min_samples_leaf": [2, 3, 5]
             },
             scoring='r2', n_jobs=n_cpus
         )
