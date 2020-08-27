@@ -134,7 +134,7 @@ class MLForecast():
     @rolling
     def pcr(self, train_test, n_features=np.inf, method=None):
         # https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html#sphx-glr-auto-examples-decomposition-plot-pca-vs-fa-model-selection-py
-        n_components = np.arange(1, 2)
+        n_components = np.arange(1, 20)
         X_train, X_test, y_train, y_test = train_test
         linear_regressor = LinearRegression()
         pcr_scores = []
