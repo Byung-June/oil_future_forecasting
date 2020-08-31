@@ -258,6 +258,10 @@ dmypy.json
 *.svg
 *.xml
 *.iml
+*.zip
+*.7z
+*.tar
+*.gz
 
 
 ### Directories ###
