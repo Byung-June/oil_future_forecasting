@@ -11,14 +11,15 @@ from sklearn.metrics import r2_score
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/df_selected.csv', type=str,
+    default='../data/df_selected_with_epu.csv', type=str,
     help="path to data"
+)
+parser.add_argument(
+    '--without-epu', default=False, action='store_true'
 )
 parser.add_argument('--filter-method',
                     default='moving_average', type=str)
 parser.add_argument('--ignore-warnings', default=True, action='store_false')
-parser.add_argument('--n-windows', default=5, type=int)
-parser.add_argument('--n-samples', default=52, type=int)
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
@@ -42,15 +43,17 @@ def evaluation(test, pred, true_variation=True):
         return r2_measure
 
 
-def make_name(name, arg_tuple):
-    n_windows, n_samples, n_features, filter_method = arg_tuple
+def make_name(name, sw_tuple, n_features, args):
+    n_samples, n_windows = sw_tuple
+    without_epu = str(args.without_epu)
+    filter_method = args.filter_method
     path = "../results/" + name + "_windows_" + str(n_windows)
     path += "_samples_" + str(n_samples)
     if n_features > 100:
         path += "_whole"
     else:
         path += "_" + str(n_features)
-    path += "_" + filter_method + ".npz"
+    path += "_" + filter_method + "_" + "without_epu_" + without_epu + ".npz"
     return path
 
 
@@ -65,7 +68,6 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     n_samples, n_windows = sw_tuple
     start_time = n_windows + n_samples - 2
     end_time = len(filtered) - 1
-    arg_tuple = tuple([n_windows, n_samples, n_features, filter_method])
 
     y_test_before_filtered = y_test_before_filtered[start_time:end_time].values
     if filter_method != 'none':
@@ -77,28 +79,34 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time)
 
-    np.savez(
-        make_name('y_test_before_filtered', arg_tuple), y_test_before_filtered
-    )
-
-    print("rfr")
-    res_rfr = ml_forecast.rand_forest_reg()
-    np.savez(make_name("res_rfr", arg_tuple), res_rfr)
-    print(evaluation(y_test_before_filtered, res_rfr))
+    y_test_before_filtered = np.expand_dims(y_test_before_filtered, axis=-1)
 
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method='f-classif'
     )
     np.savez(
-        make_name("res_linear_reg", arg_tuple), res_linear_reg)
+        make_name("res_linear_reg", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_linear_reg], axis=-1)
+    )
     print(evaluation(y_test_before_filtered, res_linear_reg))
+
+    print("rfr")
+    res_rfr = ml_forecast.rand_forest_reg()
+    np.savez(
+        make_name("res_rfr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_rfr])
+    )
+    print(evaluation(y_test_before_filtered, res_rfr))
 
     print("lasso")
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method='f-classif'
     )
-    np.savez(make_name("res_lasso", arg_tuple), res_lasso)
+    np.savez(
+        make_name("res_lasso", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_lasso])
+    )
     print(evaluation(y_test_before_filtered, res_lasso))
 
     print("svr")
@@ -106,7 +114,10 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_svr = ml_forecast.svr(n_features=50, method='f-classif')
     else:
         res_svr = ml_forecast.svr(n_features=n_features, method='f-classif')
-    np.savez(make_name("res_svr", arg_tuple), res_svr)
+    np.savez(
+        make_name("res_svr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_svr])
+    )
     print(evaluation(y_test_before_filtered, res_svr))
 
     print("kernel ridge")
@@ -116,40 +127,52 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_kr = ml_forecast.kernel_ridge(
             n_features=n_features, method='f-classif'
         )
-    np.savez(make_name("res_kr", arg_tuple), res_kr)
+    np.savez(
+        make_name("res_kr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_kr])
+    )
     print(evaluation(y_test_before_filtered, res_kr))
 
     print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method='f-classif'
     )
-    np.savez(make_name("res_dtr", arg_tuple), res_dtr)
+    np.savez(
+        make_name("res_dtr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_dtr])
+    )
     print(evaluation(y_test_before_filtered, res_dtr))
 
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
-    np.savez(make_name("res_gbr", arg_tuple), res_gbr)
+    np.savez(
+        make_name("res_gbr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_gbr])
+    )
     print(evaluation(y_test_before_filtered, res_gbr))
 
     print("hgbr")
     res_hgbr = ml_forecast.hist_grad_boost_reg()
-    np.savez(make_name("res_hgbr", arg_tuple), res_hgbr)
+    np.savez(
+        make_name("res_hgbr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_hgbr])
+    )
     print(evaluation(y_test_before_filtered, res_hgbr))
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
-    np.savez(make_name("res_pcr", arg_tuple), res_pcr)
+    np.savez(
+        make_name("res_pcr", sw_tuple, n_features, arguments),
+        np.concatenate([y_test_before_filtered, res_pcr])
+    )
     print(evaluation(y_test_before_filtered, res_pcr))
 
 
 if __name__ == '__main__':
-    exogenous = pd.read_csv(arguments.data_path)
-    if 'selected' in arguments.data_path:
-        print("use selected inputs")
-    elif 'whole' in arguments.data_path:
-        print("use whole data")
-    else:
-        raise ValueError("Name your csv file properly")
+    path = arguments.data_path
+    if arguments.without_epu:
+        path.replace('_with_epu', '-without_epu')
+    exogenous = pd.read_csv(path)
     exogenous = exogenous.set_index('date')
 
     try:
@@ -169,5 +192,6 @@ if __name__ == '__main__':
     for filter_method in ['moving_average', 'none', 'wavelet_db1']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
+                arguments.samples, arguments.windows = sw_tuple
                 copied = copy.deepcopy(exogenous)
                 main(copied, filter_method, n_features, sw_tuple)
