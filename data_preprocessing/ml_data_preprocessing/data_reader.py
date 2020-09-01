@@ -279,23 +279,46 @@ def get_nonfinancial():
     ]
 
     print('wpui')
+    wpui_url = (
+        'https://worlduncertaintyindex.com/'
+        'wp-content/uploads/2020/07/WPUI_Data.xlsx'
+    )
     wpui_data = read_data(
-        '../../data/epu/WPUI_Data.xlsx', sheet='F1', header=1)
+        wpui_url, sheet='F1', header=1
+    )
     wpui_data = daily_data(wpui_data, 'quarterly')
     wpui_data.columns = [
         'wpui_' + elt for elt in wpui_data.columns
     ]
 
     print('wui')
+    wui_url = (
+        'https://worlduncertaintyindex.com/'
+        'wp-content/uploads/2020/07/WUI_Data.xlsx'
+    )
     wui_data = read_data(
-        '../../data/epu/WUI_Data-1.xlsx', sheet='F1', header=2)
+        wui_url, sheet='F1', header=2
+    )
     wui_data = daily_data(wui_data, 'quarterly')
     wui_data.columns = [
         'wui_' + elt for elt in wui_data.columns
     ]
 
     print('fed_funds')
-    fed_funds = read_data('../../data/financial_market_monthly/FEDFUNDS.csv')
+    fed_funds_url = (
+        'https://fred.stlouisfed.org/graph/fredgraph.csv?'
+        'bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&'
+        'graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&'
+        'txtcolor=%23444444&ts=12&tts=12&width=968&nt=0&thu=0&trc='
+        '0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&'
+        'id=FEDFUNDS&scale=left&cosd=1954-07-01&coed=2020-07-01&'
+        'line_color=%234572a7&link_values=false&line_style=solid&'
+        'mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&'
+        'fq=Monthly&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&'
+        'transformation=lin&vintage_date=2020-09-01&'
+        'revision_date=2020-09-01&nd=1954-07-01'
+    )
+    fed_funds = read_data(fed_funds_url)
     fed_funds = daily_data(fed_funds, 'monthly', offset=False)
 
     print('msci')

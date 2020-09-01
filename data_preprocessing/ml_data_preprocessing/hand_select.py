@@ -7,9 +7,11 @@ name_list = [
     'US_Trade_policy_Uncertainty', 'Japanese_trade_policy_uncertainty',
     'trade_policy_EMV_Fraction',
     'total_count_of_uncertainty_surrounding_pandemics',
-    'WUI', 'WTUI', 'close',
+    'WUI',
+    'close',
     'dexjpus', 'dexuseu', 'dexusuk', 'dexchus',
-    'fedfunds', 'world_standard', 'date'
+    'fedfunds', 'world_standard',
+    'date'
 ]
 name_list = [elt.lower() for elt in name_list]
 
