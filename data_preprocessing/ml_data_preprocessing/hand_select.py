@@ -1,5 +1,6 @@
 name_list = [
-    'GEPU_curret', 'GEPU_ppp',
+    'GEPU_current', 'GEPU_ppp',
+
     'daily_infect_emv_index',
 
     'economic_policy_uncertainty', 'monetary_policy', 'fiscal_policy',
@@ -9,10 +10,11 @@ name_list = [
 
     'EURQ_US',
 
-    'US_Trade_policy_Uncertainty', 'Japanese_trade_policy_uncertainty',
-    'trade_policy_EMV_Fraction',
+    # 'US_Trade_policy_Uncertainty', 'Japanese_trade_policy_uncertainty',
+    # 'trade_policy_EMV_Fraction',
 
     'total_count_of_uncertainty_surrounding_pandemics',
+
     'WUI',
 
     'close',
@@ -32,21 +34,8 @@ def hand_select(df):
     for col_name in columns:
         for elt in name_list:
             if col_name in elt or elt in col_name:
-                if 'ma' in col_name:
-                    continue
-                if 'momentum' in col_name:
-                    continue
-                if 'std' in col_name:
-                    continue
-                if 'skew' in col_name:
-                    continue
-                if 'kurt' in col_name:
-                    continue
-                if 'pct_change' in col_name:
-                    continue
-                if 'lag0' in col_name:
-                    continue
-                selected.append(col_name)
+                if 'eurq_us_old' not in col_name:
+                    selected.append(col_name)
     df = df[selected]
     df = df.loc[:, ~df.columns.duplicated()]
     return df

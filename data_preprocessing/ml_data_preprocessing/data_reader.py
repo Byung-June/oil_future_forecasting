@@ -3,6 +3,7 @@ import pandas as pd
 import glob
 from pmdarima.arima import ndiffs
 from pandas.tseries.offsets import QuarterBegin, QuarterEnd
+from hand_select import hand_select
 
 
 def set_date_as_index(df):
@@ -49,10 +50,11 @@ def read_files(paths, fillna=True):
 
 
 def make_stationary(df):
+    df = hand_select(df)
+    df = df.dropna()
     columns = df.columns
     for name in columns:
         x = df[name].values
-        # print(name, x)
         d_kpss = ndiffs(x, test='kpss')
         d_adf = ndiffs(x, test='adf')
         d_pp = ndiffs(x, test='pp')
@@ -61,7 +63,6 @@ def make_stationary(df):
             new_name = name + '_diff' + str(d_)
             df[new_name] = df[name].diff(d_)
             df = df.drop(columns=[name])
-    df = df.dropna()
     return df
 
 
@@ -99,7 +100,6 @@ def read_data(path, sheet=False, header='infer'):
     df.columns = df.columns.str.replace('.', '_')
     df.columns = df.columns.str.replace(' ', '_')
     df.columns = df.columns.str.replace('__', '_')
-    df.dropna(inplace=True)
     return df
 
 
@@ -119,7 +119,6 @@ def make_monthly_date(df, offset=True):
     df.drop(columns=['year', 'month'], inplace=True)
     df.set_index('date', inplace=True)
     df.columns = [elt + '_monthly' for elt in df.columns]
-    df = df.dropna()
     return df
 
 
@@ -154,7 +153,6 @@ def make_daily_date(df):
     df.drop(columns=['year', 'month', 'day'], inplace=True)
     df.set_index('date', inplace=True)
     df.columns = [elt + '_daily' for elt in df.columns]
-    df = df.dropna()
     return df
 
 
@@ -230,7 +228,6 @@ def daily_data(df, freq, offset=True, fill_method='ffill'):
                 freq='D'
             )
         df = df.reindex(daily_datetime, method=fill_method)
-        df = df.dropna()
     else:
         print("Type frequency")
     daily_datetime = pd.date_range(
@@ -273,20 +270,20 @@ def get_nonfinancial():
 
     print('eurq_data')
     eurq_data = read_data(
-        'https://www.dropbox.com/s/c6yp22weychlobn/EURQ_data.xlsx?dl=0',
+        '../../data/epu/EURQ_data.xlsx',
         sheet='EURQ'
     )
     eurq_data = daily_data(eurq_data, 'monthly')
     eurq_data.columns = ['eurq_data_' + elt for elt in eurq_data.columns]
 
-    print('trade_unc')
-    trade_uncertainty_data = read_data(
-        'https://www.policyuncertainty.com/media/Trade_Uncertainty_Data.xlsx'
-    )
-    trade_uncertainty_data = daily_data(trade_uncertainty_data, 'monthly')
-    trade_uncertainty_data.columns = [
-        'trade_uncertainty_' + elt for elt in trade_uncertainty_data.columns
-    ]
+    # print('trade_unc')
+    # trade_uncertainty_data = read_data(
+    #     'https://www.policyuncertainty.com/media/Trade_Uncertainty_Data.xlsx'
+    # )
+    # trade_uncertainty_data = daily_data(trade_uncertainty_data, 'monthly')
+    # trade_uncertainty_data.columns = [
+    #     'trade_uncertainty_' + elt for elt in trade_uncertainty_data.columns
+    # ]
 
     print('wpui')
     wpui_url = (
@@ -317,7 +314,8 @@ def get_nonfinancial():
     df_non_financial = pd.concat(
         [
                 daily_epu, daily_infectious, categorical_epu, eurq_data,
-                trade_uncertainty_data, wpui_data, wui_data
+                # trade_uncertainty_data,
+                wpui_data, wui_data
         ], axis=1
     )
 
@@ -359,8 +357,6 @@ def get_financial():
     df = pd.concat([df, fed_funds, msci_data], axis=1, sort=False)
 
     df.index.name = 'date'
-    df.dropna(inplace=True)
     df = make_stationary(df)
-    df.dropna(inplace=True)
     df.index.name = 'date'
     return df
