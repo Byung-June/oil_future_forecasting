@@ -77,6 +77,10 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time)
 
+    np.savez(
+        make_name('y_test_before_filtered', arg_tuple), y_test_before_filtered
+    )
+
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
     np.savez(make_name("res_rfr", arg_tuple), res_rfr)
