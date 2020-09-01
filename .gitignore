@@ -262,8 +262,13 @@ dmypy.json
 *.7z
 *.tar
 *.gz
+*.rtf
 
 
 ### Directories ###
 data/*
 results/*
+
+
+### Ignore test files ###
+*.ipynb

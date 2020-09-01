@@ -249,30 +249,40 @@ def daily_data(df, freq, offset=True, fill_method='ffill'):
 
 def get_nonfinancial():
     print('monthly epu')
-    monthly_epu = read_data('../../data/epu/All_Country_data.xlsx')
+    monthly_epu = read_data(
+        'https://www.policyuncertainty.com/media/All_Country_Data.xlsx'
+    )
     daily_epu = daily_data(monthly_epu, 'monthly')
     daily_epu.columns = ['epu_' + elt for elt in daily_epu.columns]
 
     print('daily_infectious')
-    daily_infectious = read_data('../../data/epu/All_Infectious_EMV_Data.csv')
+    daily_infectious = read_data(
+        'https://www.policyuncertainty.com/media/All_Infectious_EMV_Data.csv'
+    )
     daily_infectious = daily_data(daily_infectious, 'daily')
     daily_infectious.columns = [
         'daily_infectious_' + elt for elt in daily_infectious.columns]
 
     print('categorical_epu')
-    categorical_epu = read_data('../../data/epu/Categorical_EPU_Data.xlsx')
+    categorical_epu = read_data(
+        'https://www.policyuncertainty.com/media/Categorical_EPU_Data.xlsx'
+    )
     categorical_epu = daily_data(categorical_epu, 'monthly')
     categorical_epu.columns = [
         'categorical_epu_' + elt for elt in categorical_epu.columns]
 
     print('eurq_data')
-    eurq_data = read_data('../../data/epu/EURQ_data.xlsx', sheet='EURQ')
+    eurq_data = read_data(
+        'https://www.dropbox.com/s/c6yp22weychlobn/EURQ_data.xlsx?dl=0',
+        sheet='EURQ'
+    )
     eurq_data = daily_data(eurq_data, 'monthly')
     eurq_data.columns = ['eurq_data_' + elt for elt in eurq_data.columns]
 
     print('trade_unc')
     trade_uncertainty_data = read_data(
-        '../../data/epu/Trade_Uncertainty_Data.xlsx')
+        'https://www.policyuncertainty.com/media/Trade_Uncertainty_Data.xlsx'
+    )
     trade_uncertainty_data = daily_data(trade_uncertainty_data, 'monthly')
     trade_uncertainty_data.columns = [
         'trade_uncertainty_' + elt for elt in trade_uncertainty_data.columns
@@ -304,6 +314,27 @@ def get_nonfinancial():
         'wui_' + elt for elt in wui_data.columns
     ]
 
+    df_non_financial = pd.concat(
+        [
+                daily_epu, daily_infectious, categorical_epu, eurq_data,
+                trade_uncertainty_data, wpui_data, wui_data
+        ], axis=1
+    )
+
+    print('non-financial data')
+    df_non_financial.index.name = 'date'
+    return df_non_financial
+
+
+def get_financial():
+    print('finance data')
+    path = ["../../data/financial_market"]
+    csv_list, xls_list = read_files(path)
+    df = pd.concat([*csv_list], axis=1, sort=False)
+    df = df.drop(df.tail(3).index)
+    df = df.fillna(method='ffill')
+    df.columns = [elt + '_daily' for elt in df.columns]
+
     print('fed_funds')
     fed_funds_url = (
         'https://fred.stlouisfed.org/graph/fredgraph.csv?'
@@ -325,27 +356,7 @@ def get_nonfinancial():
     msci_data = read_data('../../data/financial_market_monthly/msciworld.xls')
     msci_data = daily_data(msci_data, 'monthly', offset=False)
 
-    df_non_financial = pd.concat(
-        [
-                daily_epu, daily_infectious, categorical_epu, eurq_data,
-                trade_uncertainty_data, wpui_data, wui_data,
-                fed_funds, msci_data
-        ], axis=1
-    )
-
-    print('non-financial data')
-    df_non_financial.index.name = 'date'
-    return df_non_financial
-
-
-def get_financial():
-    print('finance data')
-    path = ["../../data/financial_market"]
-    csv_list, xls_list = read_files(path)
-    df = pd.concat([*csv_list], axis=1, sort=False)
-    df = df.drop(df.tail(3).index)
-    df = df.fillna(method='ffill')
-    df.columns = [elt + '_daily' for elt in df.columns]
+    df = pd.concat([df, fed_funds, msci_data], axis=1, sort=False)
 
     df.index.name = 'date'
     df.dropna(inplace=True)
