@@ -4,6 +4,7 @@ import glob
 from pmdarima.arima import ndiffs
 from pandas.tseries.offsets import QuarterBegin, QuarterEnd
 from hand_select import hand_select
+import pandas_datareader.data as web
 
 
 def set_date_as_index(df):
@@ -326,9 +327,79 @@ def get_nonfinancial():
 
 def get_financial():
     print('finance data')
-    path = ["../../data/financial_market"]
-    csv_list, xls_list = read_files(path)
-    df = pd.concat([*csv_list], axis=1, sort=False)
+
+    sp500 = df = web.DataReader(
+        '^GSPC', 'yahoo',
+        start='1990-01-03', end='2020-08-31'
+    )
+
+    print('dex jp us')
+    dexjpus_url = (
+        'https://fred.stlouisfed.org/graph/fredgraph.csv?'
+        'bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&'
+        'graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars='
+        'on&txtcolor=%23444444&ts=12&tts=12&width=968&nt=0&thu=0&trc='
+        '0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id='
+        'DEXJPUS&scale=left&cosd=1971-01-04&coed=2020-08-28&'
+        'line_color=%234572a7&link_values=false&line_style=solid&'
+        'mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&'
+        'fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&'
+        'transformation=lin&vintage_date=2020-09-01&revision_date'
+        '=2020-09-01&nd=1971-01-04'
+    )
+    dexjpus = pd.read_csv(dexjpus_url)
+
+    print('dex us eu')
+    dexuseu_url = (
+        'https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor='
+        '%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor='
+        '%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%'
+        '23444444&ts=12&tts=12&width=968&nt=0&thu=0&trc=0&show_legend='
+        'yes&show_axis_titles=yes&show_tooltip=yes&id=DEXUSEU&scale=left&'
+        'cosd=1999-01-04&coed=2020-08-28&line_color=%234572a7&link_values='
+        'false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&'
+        'oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd='
+        '2020-02-01&line_index=1&transformation=lin&vintage_date='
+        '2020-09-01&revision_date=2020-09-01&nd=1999-01-04'
+    )
+    dexuseu = pd.read_csv(dexuseu_url)
+
+    print('dex us uk')
+    dexusuk_url = (
+        'https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor='
+        '%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor='
+        '%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%'
+        '23444444&ts=12&tts=12&width=968&nt=0&thu=0&trc=0&show_legend='
+        'yes&show_axis_titles=yes&show_tooltip=yes&id=DEXUSUK&scale='
+        'left&cosd=1971-01-04&coed=2020-08-28&line_color=%234572a7&'
+        'link_values=false&line_style=solid&mark_type=none&mw=3&lw='
+        '2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&'
+        'fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date='
+        '2020-09-01&revision_date=2020-09-01&nd=1971-01-04'
+    )
+    dexusuk = pd.read_csv(dexusuk_url)
+
+    print('dex ch us')
+    dexchus_url = (
+        'https://fred.stlouisfed.org/graph/fredgraph.csv?'
+        'bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%'
+        '20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&'
+        'recession_bars=on&txtcolor=%23444444&ts=12&tts=12&'
+        'width=968&nt=0&thu=0&trc=0&show_legend=yes&show_'
+        'axis_titles=yes&show_tooltip=yes&id=DEXCHUS&scale='
+        'left&cosd=1981-01-02&coed=2020-08-28&line_color='
+        '%234572a7&link_values=false&line_style=solid&'
+        'mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&'
+        'mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&'
+        'line_index=1&transformation=lin&vintage_date='
+        '2020-09-01&revision_date=2020-09-01&nd=1981-01-02'
+    )
+    dexchus = pd.read_csv(dexchus_url)
+
+    df = pd.concat(
+        [sp500, dexjpus, dexuseu, dexusuk, dexchus],
+        axis=1, sort=False
+    )
     df = df.drop(df.tail(3).index)
     df = df.fillna(method='ffill')
     df.columns = [elt + '_daily' for elt in df.columns]
