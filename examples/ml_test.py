@@ -11,7 +11,7 @@ from sklearn.metrics import r2_score
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/df_selected_with_epu.csv', type=str,
+    default='../data/ml_data.csv', type=str,
     help="path to data"
 )
 parser.add_argument(
