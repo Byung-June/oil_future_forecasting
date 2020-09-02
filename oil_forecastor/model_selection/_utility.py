@@ -54,21 +54,10 @@ def rolling_train_test_split(data_, window_num, sample_num, time):
     data_y_test = data_y.iloc[time + 1]
     data_x_test = data_x.iloc[time - window_num + 2: time + 2, :]
 
-    data_tuple = (
+    return (
         data_x_train, data_x_test,
         data_y_train, data_y_test
     )
-
-    X_train = np.stack(
-        [elt.values for elt in data_tuple[0]], axis=-1
-    )
-    X_test = np.expand_dims(data_tuple[1].values, axis=-1)
-    X_train = X_train.reshape(X_train.shape[-1], -1)
-    X_test = X_test.reshape(X_test.shape[-1], -1)
-    y_train = np.array(data_tuple[2])
-    y_test = np.array(data_tuple[3])
-
-    return X_train, X_test, y_train, y_test
 
 
 def get_features(X_train, y_train, n_features=20):
