@@ -68,6 +68,8 @@ def make_stationary(df):
 
 
 def read_data(path, sheet=False, header='infer'):
+    if 'msci' in path:
+        header = 6
     if sheet is False:
         try:
             df = pd.read_excel(path, header=header)
