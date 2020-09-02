@@ -17,7 +17,8 @@ def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
         df_ = df_[pd.to_numeric(df_[col_name[1]], errors='coerce').notnull()]
         df_ = df_.set_index('date')
         if freq == 'M':
-            df_.index = df_.index.to_period('M').to_timestamp('M').shift(1, freq='D')
+            # df_.index = df_.index.to_period('M').to_timestamp('M').shift(1, freq='D')
+            pass
         try:
             df_ = df_.drop(['_'], axis=1)
         except KeyError:
@@ -149,9 +150,10 @@ if __name__ == "__main__":
                                     + df_m['CRUDEOIL_prod_OC'] + df_m['CRUDEOIL_prod_SA'] \
                                     + df_m['CRUDEOIL_prod_US'] + df_m['CRUDEOIL_prod_CN']
 
-    df_m = df_slicing(fill_bs_date(b_index, df_m), start=start_date, end=end_date)
     col_stationary_index, col_stationary_diff = stationary_df(df_m)
     df_m = make_stationary(df_m, col_stationary_index, col_stationary_diff)
+    df_m = df_slicing(fill_bs_date(b_index, df_m), start=start_date, end=end_date)
+
 
     # Merge (Freq)
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')

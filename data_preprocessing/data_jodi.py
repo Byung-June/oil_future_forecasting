@@ -36,3 +36,6 @@ def jodi_read():
     df_jodi.index = df_jodi.index.to_period('M').to_timestamp('M').shift(1, freq='D')
     return df_jodi
 
+if __name__=='__main__':
+    aa = jodi_read()
+    aa.to_csv('jodi_readable.csv')
