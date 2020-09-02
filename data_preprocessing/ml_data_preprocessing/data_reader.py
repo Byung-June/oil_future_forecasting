@@ -271,13 +271,13 @@ def get_nonfinancial():
     categorical_epu.columns = [
         'categorical_epu_' + elt for elt in categorical_epu.columns]
 
-    print('eurq_data')
-    eurq_data = read_data(
-        '../../data/epu/EURQ_data.xlsx',
-        sheet='EURQ'
-    )
-    eurq_data = daily_data(eurq_data, 'monthly')
-    eurq_data.columns = ['eurq_data_' + elt for elt in eurq_data.columns]
+    # print('eurq_data')
+    # eurq_data = read_data(
+    #     '../../data/epu/EURQ_data.xlsx',
+    #     sheet='EURQ'
+    # )
+    # eurq_data = daily_data(eurq_data, 'monthly')
+    # eurq_data.columns = ['eurq_data_' + elt for elt in eurq_data.columns]
 
     # print('trade_unc')
     # trade_uncertainty_data = read_data(
@@ -316,8 +316,8 @@ def get_nonfinancial():
 
     df_non_financial = pd.concat(
         [
-                daily_epu, daily_infectious, categorical_epu, eurq_data,
-                # trade_uncertainty_data,
+                daily_epu, daily_infectious, categorical_epu,
+                # eurq_data, trade_uncertainty_data,
                 wpui_data, wui_data
         ], axis=1
     )
