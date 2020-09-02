@@ -321,7 +321,6 @@ def get_nonfinancial():
     )
 
     print('non-financial data')
-    df_non_financial.index.name = 'date'
     return df_non_financial
 
 
@@ -332,6 +331,13 @@ def get_financial():
         '^GSPC', 'yahoo',
         start='1990-01-03', end='2020-08-31'
     )
+    sp500.columns = [elt.lower().replace(' ', '_') for elt in sp500.columns]
+    try:
+        sp500.set_index('date', inplace=True)
+    except Exception:
+        pass
+    sp500.index.name = 'date'
+    sp500.index = pd.DatetimeIndex(sp500.index)
 
     print('dex jp us')
     dexjpus_url = (
@@ -348,6 +354,9 @@ def get_financial():
         '=2020-09-01&nd=1971-01-04'
     )
     dexjpus = pd.read_csv(dexjpus_url)
+    dexjpus.columns = [elt.lower() for elt in dexjpus.columns]
+    dexjpus['date'] = pd.DatetimeIndex(dexjpus['date'])
+    dexjpus.set_index('date', inplace=True)
 
     print('dex us eu')
     dexuseu_url = (
@@ -363,6 +372,9 @@ def get_financial():
         '2020-09-01&revision_date=2020-09-01&nd=1999-01-04'
     )
     dexuseu = pd.read_csv(dexuseu_url)
+    dexuseu.columns = [elt.lower() for elt in dexuseu.columns]
+    dexuseu['date'] = pd.DatetimeIndex(dexuseu['date'])
+    dexuseu.set_index('date', inplace=True)
 
     print('dex us uk')
     dexusuk_url = (
@@ -378,6 +390,9 @@ def get_financial():
         '2020-09-01&revision_date=2020-09-01&nd=1971-01-04'
     )
     dexusuk = pd.read_csv(dexusuk_url)
+    dexusuk.columns = [elt.lower() for elt in dexusuk.columns]
+    dexusuk['date'] = pd.DatetimeIndex(dexusuk['date'])
+    dexusuk.set_index('date', inplace=True)
 
     print('dex ch us')
     dexchus_url = (
@@ -395,14 +410,22 @@ def get_financial():
         '2020-09-01&revision_date=2020-09-01&nd=1981-01-02'
     )
     dexchus = pd.read_csv(dexchus_url)
+    dexchus.columns = [elt.lower() for elt in dexchus.columns]
+    dexchus['date'] = pd.DatetimeIndex(dexchus['date'])
+    dexchus.set_index('date', inplace=True)
 
     df = pd.concat(
         [sp500, dexjpus, dexuseu, dexusuk, dexchus],
         axis=1, sort=False
     )
+    df = make_float(df)
+    df.columns = [elt.lower() for elt in df.columns]
     df = df.drop(df.tail(3).index)
     df = df.fillna(method='ffill')
-    df.columns = [elt + '_daily' for elt in df.columns]
+    df.columns = [elt.lower() + '_daily' for elt in df.columns]
+
+    df = df.dropna()
+    df = make_stationary(df)
 
     print('fed_funds')
     fed_funds_url = (
@@ -426,8 +449,4 @@ def get_financial():
     msci_data = daily_data(msci_data, 'monthly', offset=False)
 
     df = pd.concat([df, fed_funds, msci_data], axis=1, sort=False)
-
-    df.index.name = 'date'
-    df = make_stationary(df)
-    df.index.name = 'date'
     return df

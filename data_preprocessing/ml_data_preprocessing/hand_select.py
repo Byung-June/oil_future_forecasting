@@ -17,7 +17,7 @@ name_list = [
 
     'WUI',
 
-    'close',
+    'adj_close',
 
     'dexjpus', 'dexuseu', 'dexusuk', 'dexchus',
     'fedfunds', 'world_standard',
