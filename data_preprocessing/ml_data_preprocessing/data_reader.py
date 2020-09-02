@@ -62,7 +62,15 @@ def make_stationary(df):
         d_ = max(d_kpss, d_adf, d_pp)
         if d_ > 0:
             new_name = name + '_diff' + str(d_)
-            df[new_name] = df[name].diff(d_)
+            if d_ == 1:
+                df[new_name] = df[name].diff()
+            elif d_ == 2:
+                df[new_name] = df[name].diff().diff()
+            elif d_ > 2:
+                raise ValueError('High order differentiation')
+            else:
+                raise Exception('Some thing is wrong')
+
             df = df.drop(columns=[name])
     return df
 
