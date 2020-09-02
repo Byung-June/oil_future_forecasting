@@ -33,6 +33,6 @@ def jodi_read():
     zero_rule = df_jodi.replace([0, 'NA'], np.nan).apply(lambda x: any(~x.isnull()))
     df_jodi = df_jodi.loc[:, zero_rule]
     # df_jodi.to_csv('2.jodi_M.test.csv')
-
+    df_jodi.index = df_jodi.index.to_period('M').to_timestamp('M').shift(1, freq='D')
     return df_jodi
 

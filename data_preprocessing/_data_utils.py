@@ -69,7 +69,7 @@ def df_slicing(df_, start, end):
 def fill_bs_date(index, df_, method='ffill'):
     dummy = pd.DataFrame(data=np.zeros(len(index)), index=index, columns=['dummy'])
     dummy.index.name = 'date'
-    df_ = pd.merge(df_, dummy, left_index=True, right_index=True, how='right')
+    df_ = pd.merge(df_, dummy, left_index=True, right_index=True, how='outer')
     df_ = df_.replace(['NA', 'NaN'], np.nan)
     if method == 'ffill':
         df_ = df_.fillna(method='ffill')
@@ -77,7 +77,7 @@ def fill_bs_date(index, df_, method='ffill'):
         df_ = df_.fillna(0)
     else:
         pass
-
+    df_ = df_.loc[index]
     df_ = df_.drop(columns=['dummy'])
     return df_
 

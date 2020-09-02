@@ -1,10 +1,10 @@
 import pandas as pd
-from utils import make_diff_lag, make_pct_change_lag
-from utils import make_momentum, make_moving_average
-from utils import make_std, make_skew, make_kurt
-from data_reader import get_financial
-from data_reader import get_nonfinancial
-from hand_select import hand_select
+from .utils import make_diff_lag, make_pct_change_lag
+from .utils import make_momentum, make_moving_average
+from .utils import make_std, make_skew, make_kurt
+from .data_reader import get_financial
+from .data_reader import get_nonfinancial
+from .hand_select import hand_select
 
 
 def drop_non_daily(df):
@@ -55,8 +55,3 @@ def make_data():
 
     df_selected = hand_select(df)
     return df_selected
-
-
-if __name__ == '__main__':
-    df_selected = make_data()
-    df_selected.to_csv('df_selected.csv')

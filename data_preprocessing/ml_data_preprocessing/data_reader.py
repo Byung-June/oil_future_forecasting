@@ -3,7 +3,7 @@ import pandas as pd
 import glob
 from pmdarima.arima import ndiffs
 from pandas.tseries.offsets import QuarterBegin, QuarterEnd
-from hand_select import hand_select
+from .hand_select import hand_select
 import pandas_datareader.data as web
 
 
@@ -447,7 +447,7 @@ def get_financial():
     fed_funds = daily_data(fed_funds, 'monthly', offset=False)
 
     print('msci')
-    msci_data = read_data('../../data/financial_market_monthly/msciworld.xls')
+    msci_data = read_data('../data/financial_market_monthly/msciworld.xls')
     msci_data = daily_data(msci_data, 'monthly', offset=False)
 
     df = pd.concat([df, fed_funds, msci_data], axis=1, sort=False)
