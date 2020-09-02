@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 # from data_preprocessing._data_utils import *
 # from data_preprocessing.data_jodi import jodi_read
-from _data_utils import stationary_df, make_stationary, scaler_with_nan, df_slicing, fill_bs_date, future_rolling, make_float
+from _data_utils import stationary_df, make_stationary
+from _data_utils import df_slicing, fill_bs_date, future_rolling, make_float
+from _data_utils import scaler_with_nan
 from data_jodi import jodi_read
 from ml_data_preprocessing.make_data import make_data
 
@@ -177,8 +179,8 @@ if __name__ == "__main__":
     df_input.index.name = 'date'
     df_input = df_input.dropna()
 
-    # df_x = scaler_with_nan(df_input.iloc[:, 6:])
-    # df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
+    df_x = scaler_with_nan(df_input.iloc[:, 6:])
+    df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
     # print('final', df_input, len(df_input.columns))
-    df_input.to_csv('2ml_data_input_normalized_stationary.csv')
+    df_input.to_csv('ml_data.csv')
 

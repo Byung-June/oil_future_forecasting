@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import scale
 from oil_forecastor.model_selection._utility import adf_test
+from sklearn.preprocessing import StandardScaler
 
 
 def stationary_df(df_):
@@ -42,19 +43,11 @@ def make_stationary(df_, col_stationary_index_, col_stationary_diff_):
 
 
 def scaler_with_nan(dataframe):
+    scaler = StandardScaler()
     for name in dataframe.columns:
-        data = dataframe[name].values
-        not_inf = ~np.isinf(data)
-        scaled = np.full_like(data, np.nan)
-        data[not_inf] = data[not_inf] - data[not_inf].mean()
-
-        assert np.isnan(data[not_inf].mean()) == False
-        assert np.isinf(data[not_inf].mean()) == False
-
-        scaled_data = scale(data[not_inf])
-        scaled[not_inf] = scaled_data
-        scaled[data == np.inf] = np.absolute(scaled_data).max() * 1.5
-        scaled[data == -np.inf] = -np.absolute(scaled_data).max() * 1.5
+        data = dataframe[name].values.reshape(-1, 1)
+        scaler.fit(data)
+        scaled = scaler.transform(data)
         dataframe[name] = scaled
     return dataframe
 
