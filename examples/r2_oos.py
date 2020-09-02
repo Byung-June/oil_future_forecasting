@@ -1,4 +1,7 @@
 import pandas as pd
+import os
+import glob
+from sklearn.metrics import r2_score
 
 
 def r2_oos_func(data_):
@@ -12,10 +15,23 @@ def r2_oos_func(data_):
     return r2_oos, data_
 
 
+def r2_oos_func_sklearn(data_):
+    data_ = pd.read_csv(data_, index_col=1)
+    data_ = data_.drop(columns=['Unnamed: 0'])
+    pred = data_.iloc[:, 0]
+    y = data_.iloc[:, 1]
+    r2_oos = r2_score(y, pred)
+    # print(sum(pow(pred-y, 2)))
+    # print(sum(pow(y-data_.iloc[:, 1].mean(), 2)))
+    return r2_oos, data_
+
 if __name__=='__main__':
     # data = pd.read_csv('arima_5_52_10.csv', index_col=1)
     # data = data.drop(columns=['Unnamed: 0'])
     # print(data)
+    path = os.getcwd()
+    names = glob.glob(path + "/*.csv")
 
-    r2_oos, data = r2_oos_func('arima_5_52_0.csv')
-    print(r2_oos)
+    for name in names:
+        r2_oos, data = r2_oos_func_sklearn(name)
+        print(r2_oos)

@@ -111,7 +111,7 @@ def future_rolling(df_, method='additive'):
         df_['spread'] = 1
         for date_, i in zip(df_.index, np.arange(len(df_.index))):
             if df_.loc[date_, 'index'] == 1:
-                val = df_.loc[date_, 'y_test'] / df_.loc[df_.index[i-1], 'y_test']
+                val = df_.loc[df_.index[i-1], 'y_test'] / df_.loc[df_.index[i-1], 'y_test_dummy']
                 if val > 0:
                     df_.loc[date_, 'spread'] = val
                 else:
@@ -123,8 +123,8 @@ def future_rolling(df_, method='additive'):
 
     else:
         print('correct method needed')
-    df_ = df_.drop(['index', 'spread', 'cum_spread'], axis=1)
-    print('rol',df_)
+    df_ = df_.drop(['y_test_dummy', 'index', 'spread', 'cum_spread'], axis=1)
+    print('rol', df_)
     return df_
 
 

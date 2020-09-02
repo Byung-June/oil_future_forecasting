@@ -14,7 +14,7 @@ def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
         df_ = df_[pd.to_numeric(df_[col_name[1]], errors='coerce').notnull()]
         df_ = df_.set_index('date')
         if freq == 'M':
-            df_.index = df_.index.to_period('M').to_timestamp('M')
+            df_.index = df_.index.to_period('M').to_timestamp('M').shift(1, freq='D')
         try:
             df_ = df_.drop(['_'], axis=1)
         except KeyError:
@@ -31,7 +31,7 @@ def read_data_csv(filename, freq='M'):
     df_ = df_.replace([0, 'NA', 'NaN'], np.nan)
 
     if freq=='M':
-        df_.index = df_.index.to_period('M').to_timestamp('M')
+        df_.index = df_.index.to_period('M').to_timestamp('M').shift(1, freq='D')
     df_ = df_.loc[~df_.index.duplicated(keep='first')]
     return df_
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_FUT_S1_D.xls',
             ['Data 1'],
-            [['date', 'y_test']]
+            [['date', 'y_test', 'y_test_dummy']]
          ],
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_SPT_S1_D.xls',
@@ -174,4 +174,5 @@ if __name__ == "__main__":
     df_x = scaler_with_nan(df_input.iloc[:, 6:])
     df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
     # print('final', df_input, len(df_input.columns))
-    df_input.to_csv('ml_data_input_normalized_stationary.csv')
+    df_input.to_csv('2ml_data_input_normalized_stationary.csv')
+
