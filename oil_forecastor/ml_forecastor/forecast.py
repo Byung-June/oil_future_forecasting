@@ -60,7 +60,8 @@ class MLForecast():
             [elt.values for elt in data_tuple[0]], axis=-1
         )
         X_test = np.expand_dims(data_tuple[1].values, axis=-1)
-        X_train = X_train.reshape(X_train.shape[-1], -1)
+        X_train = X_train.reshape(-1, X_train.shape[-1])
+        X_train = np.transpose(X_train)
         X_test = X_test.reshape(X_test.shape[-1], -1)
         y_train = np.array(data_tuple[2])
         y_test = np.array(data_tuple[3])

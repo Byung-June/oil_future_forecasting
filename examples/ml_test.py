@@ -18,7 +18,7 @@ parser.add_argument(
     '--without-epu', default=False, action='store_true'
 )
 parser.add_argument('--filter-method',
-                    default='moving_average', type=str, action='append')
+                    default='moving_average', type=str)
 parser.add_argument('--ignore-warnings', default=True, action='store_false')
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
@@ -192,6 +192,5 @@ if __name__ == '__main__':
     for filter_method in ['moving_average', 'none', 'wavelet_db1']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
-                arguments.samples, arguments.windows = sw_tuple
                 copied = copy.deepcopy(exogenous)
                 main(copied, filter_method, n_features, sw_tuple)
