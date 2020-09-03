@@ -109,6 +109,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_lasso))
 
+    print("svr")
     if n_features > 100:
         res_svr = ml_forecast.svr(n_features=50, method='f-classif')
     else:
@@ -119,6 +120,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_svr))
 
+    print("kr")
     if n_features > 100:
         res_kr = ml_forecast.kernel_ridge(n_features=50, method='f-classif')
     else:
@@ -131,6 +133,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_kr))
 
+    print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method='f-classif'
     )
@@ -140,6 +143,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_dtr))
 
+    print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
     np.savez(
         make_name("res_gbr", sw_tuple, n_features, arguments),
@@ -147,6 +151,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_gbr))
 
+    print("hgbr")
     res_hgbr = ml_forecast.hist_grad_boost_reg()
     np.savez(
         make_name("res_hgbr", sw_tuple, n_features, arguments),
@@ -154,6 +159,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     )
     print(evaluation(y_test_before_filtered, res_hgbr))
 
+    print("pcr")
     res_pcr = ml_forecast.pcr()
     np.savez(
         make_name("res_pcr", sw_tuple, n_features, arguments),

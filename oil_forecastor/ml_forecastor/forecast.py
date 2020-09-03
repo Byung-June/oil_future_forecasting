@@ -97,7 +97,10 @@ class MLForecast():
         dtr_gridsearch = GridSearchCV(
             DecisionTreeRegressor(),
             verbose=self.verbose,
-            param_grid={"max_depth": [i + 1 for i in range(20)]},
+            param_grid={
+                "max_depth": [2, 3, 5, 10, 15, 20],
+                "min_samples_leaf": [1, 2, 3]
+            },
             scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
@@ -112,7 +115,7 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 'max_depth': [2, 3, 5, 10],
-                'n_estimators': [20, 50, 100]
+                'n_estimators': [20, 50, 100, 200]
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -184,8 +187,8 @@ class MLForecast():
             SVR(kernel='rbf', gamma=0.1, cache_size=10000),
             verbose=self.verbose,
             param_grid={
-                'C': [1, 2, 3, 4, 5],
-                'gamma': np.logspace(-2, 1, 5)
+                'C': [1, 3, 5],
+                'gamma': np.logspace(-4, 1, 8)
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -200,7 +203,7 @@ class MLForecast():
             KernelRidge(kernel='rbf', gamma=0.1),
             verbose=self.verbose,
             param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
-                        "gamma": np.logspace(-2, 3, 6)},
+                        "gamma": np.logspace(-3, 3, 8)},
             scoring='r2', n_jobs=n_cpus
         )
         kr_gridsearch.fit(X_train, y_train)
