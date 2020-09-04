@@ -26,19 +26,22 @@ def rolling(func):
         self,
         n_features=np.inf, method=None, *args, **kwargs
     ):
-        y_pred_list = []
         sample_date = pd.to_datetime(
             self.data.index[:self.end_time_idx]
         )
+        df = pd.DataFrame(np.nan,
+                          index=self.data.index,
+                          columns=['y_pred', 'y_filtered_test'])
+        # add one day because the test date is one day
+        # after the last date of thetraining dataset
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
-
             train_test = self._data_helper(i, n_features, method)
             y_pred = func(self, train_test, n_features, method)
-            y_pred_list.append(y_pred)
-        y_pred_list = np.array(y_pred_list).reshape(-1, 1)
-        return y_pred_list
+            df['y_filtered_test'].iloc[i+1] = train_test[-1].flatten()
+            df['y_pred'].iloc[i+1] = y_pred.flatten()
+        return df
     return train_model_wrapper
 
 
@@ -85,7 +88,7 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
             Lasso(max_iter=3000, tol=5e-2, selection='random'),
-            verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 60)},
+            verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 15)},
             scoring='r2', n_jobs=n_cpus
         )
         lasso_gridsearch.fit(X_train, y_train)
@@ -147,7 +150,8 @@ class MLForecast():
     @rolling
     def pcr(self, train_test, n_features=np.inf, method=None):
         # https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html#sphx-glr-auto-examples-decomposition-plot-pca-vs-fa-model-selection-py
-        n_components = np.arange(1, 20)
+        max_components = min(n_features, 30)
+        n_components = np.arange(1, max_components)
         X_train, X_test, y_train, y_test = train_test
         linear_regressor = LinearRegression()
         pcr_scores = []
@@ -195,8 +199,8 @@ class MLForecast():
             SVR(kernel='rbf', gamma=0.1, cache_size=10000),
             verbose=self.verbose,
             param_grid={
-                'C': [1, 3, 5],
-                'gamma': np.logspace(-4, 1, 8)
+                'C': [0.1, 1, 3, 5],
+                'gamma': np.logspace(-3, 1, 8)
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -211,7 +215,7 @@ class MLForecast():
             KernelRidge(kernel='rbf', gamma=0.1),
             verbose=self.verbose,
             param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
-                        "gamma": np.logspace(-3, 3, 8)},
+                        "gamma": np.logspace(-3, 1, 8)},
             scoring='r2', n_jobs=n_cpus
         )
         kr_gridsearch.fit(X_train, y_train)
