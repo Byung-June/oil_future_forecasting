@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 from functools import wraps  # for debugging purpose
-import concurrent
-import copy
 from tqdm import tqdm
 import multiprocessing
 from sklearn.model_selection import cross_val_score
@@ -31,40 +29,18 @@ def rolling(func):
         sample_date = pd.to_datetime(
             self.data.index[:self.end_time_idx]
         )
-        iloc_time_idx_tuples = list(enumerate(sample_date))
-        df_ = pd.DataFrame(np.nan,
-                           index=self.data.index,
-                           columns=['y_pred', 'y_filtered_test'])
-
+        df = pd.DataFrame(np.nan,
+                          index=self.data.index,
+                          columns=['y_pred', 'y_filtered_test'])
         # add one day because the test date is one day
         # after the last date of thetraining dataset
-        def _get_res(tuple_, df):
-            i, time_idx = tuple_
+        for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
-                df['y_filtered_test'].iloc[i+1] = np.array(np.nan)
-                df['y_pred'].iloc[i+1] = np.array(np.nan)
-            else:
-                train_test = self._data_helper(i, n_features, method)
-                y_pred = func(self, train_test, n_features, method)
-                df['y_filtered_test'].iloc[i+1] = train_test[-1].flatten()
-                df['y_pred'].iloc[i+1] = y_pred.flatten()
-            df = df.dropna()
-            return df
-
-        with concurrent.futures.ThreadPoolExecutor(n_cpus) as executor:
-            res_list = []
-            res_per_time = {
-                executor.submit(_get_res, iloc_time_idx, copy.deepcopy(df_)):
-                iloc_time_idx for iloc_time_idx in iloc_time_idx_tuples
-            }
-            for future in tqdm(concurrent.futures.as_completed(res_per_time),
-                               total=len(res_per_time)):
-                res_list.append(future.result())
-
-        df = pd.concat(res_list)
-        df = df.sort_index()
-        print(df.head(2))
-        print(df.tail(2))
+                continue
+            train_test = self._data_helper(i, n_features, method)
+            y_pred = func(self, train_test, n_features, method)
+            df['y_filtered_test'].iloc[i+1] = train_test[-1].flatten()
+            df['y_pred'].iloc[i+1] = y_pred.flatten()
         return df
     return train_model_wrapper
 
@@ -113,7 +89,7 @@ class MLForecast():
         lasso_gridsearch = GridSearchCV(
             Lasso(max_iter=3000, tol=5e-2, selection='random'),
             verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 15)},
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         lasso_gridsearch.fit(X_train, y_train)
         y_pred = lasso_gridsearch.predict(X_test)
@@ -127,10 +103,10 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 "max_depth": [2, 3, 5, 10, 15, 20],
-                "min_samples_split": [0.1, 0.3],
+                "min_samples_splits": [0.1, 0.3, 0.8],
                 "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
             },
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
@@ -144,11 +120,11 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 "learning_rate": [0.05, 0.1, 0.2, 0.3],
-                "min_samples_split": [0.1, 0.3],
+                "min_samples_splits": [0.1, 0.3],
                 'n_estimators': [20, 50, 100],
                 'max_depth': [2, 3, 5, 10]
             },
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
@@ -165,7 +141,7 @@ class MLForecast():
                 "min_samples_leaf": [5, 10, 20],
                 'max_depth': [2, 3, 5, 10]
             },
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         hgbr_gridsearch.fit(X_train, y_train)
         y_pred = hgbr_gridsearch.predict(X_test)
@@ -207,10 +183,10 @@ class MLForecast():
             verbose=self.verbose, param_grid={
                 'n_estimators': [20, 50, 100],
                 "max_depth": [2, 5, 10],
-                "min_samples_split": [0.1, 0.3],
+                "min_samples_splits": [0.1, 0.3],
                 "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
             },
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         rfr_gridsearch.fit(X_train, y_train)
         y_pred = rfr_gridsearch.predict(X_test)
@@ -226,7 +202,7 @@ class MLForecast():
                 'C': [0.1, 1, 3, 5],
                 'gamma': np.logspace(-3, 1, 8)
             },
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         svr_gridsearch.fit(X_train, y_train)
         y_pred = svr_gridsearch.predict(X_test)
@@ -240,7 +216,7 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
                         "gamma": np.logspace(-3, 1, 8)},
-            scoring='r2'
+            scoring='r2', n_jobs=n_cpus
         )
         kr_gridsearch.fit(X_train, y_train)
         y_pred = kr_gridsearch.predict(X_test)
