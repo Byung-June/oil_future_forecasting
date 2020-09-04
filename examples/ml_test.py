@@ -87,6 +87,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method='f-classif'
     )
+    res_lasso = pd.concat([res_lasso, y_test_before_filtered],
+                          axis=1)
     r2_test, r2_filtered_test = evaluation(res_lasso)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lasso_reg\
@@ -95,6 +97,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
+    res_pcr = pd.concat([res_pcr, y_test_before_filtered],
+                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_pcr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_pcr", sw_tuple, n_features, arguments)
@@ -105,6 +109,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_svr = ml_forecast.svr(n_features=50, method='f-classif')
     else:
         res_svr = ml_forecast.svr(n_features=n_features, method='f-classif')
+    res_svr = pd.concat([res_svr, y_test_before_filtered],
+                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_svr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_svr", sw_tuple, n_features, arguments)
@@ -117,6 +123,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_kr = ml_forecast.kernel_ridge(
             n_features=n_features, method='f-classif'
         )
+    res_kr = pd.concat([res_kr, y_test_before_filtered],
+                       axis=1)
     r2_test, r2_filtered_test = evaluation(res_kr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_kr", sw_tuple, n_features, arguments)
@@ -126,6 +134,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method='f-classif'
     )
+    res_dtr = pd.concat([res_dtr, y_test_before_filtered],
+                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_dtr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_dtr", sw_tuple, n_features, arguments)
@@ -133,6 +143,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
+    res_rfr = pd.concat([res_rfr, y_test_before_filtered],
+                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_rfr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_rfr", sw_tuple, n_features, arguments)
@@ -140,6 +152,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
+    res_gbr = pd.concat([res_gbr, y_test_before_filtered],
+                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_gbr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_gbr", sw_tuple, n_features, arguments)
@@ -147,6 +161,8 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("hgbr")
     res_hgbr = ml_forecast.hist_grad_boost_reg()
+    res_hgbr = pd.concat([res_hgbr, y_test_before_filtered],
+                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_hgbr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
