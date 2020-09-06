@@ -103,7 +103,7 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 "max_depth": [2, 3, 5, 10, 15, 20],
-                "min_samples_splits": [0.1, 0.3, 0.8],
+                "min_samples_split": [0.1, 0.3],
                 "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
             },
             scoring='r2', n_jobs=n_cpus
@@ -120,7 +120,7 @@ class MLForecast():
             verbose=self.verbose,
             param_grid={
                 "learning_rate": [0.05, 0.1, 0.2, 0.3],
-                "min_samples_splits": [0.1, 0.3],
+                "min_samples_split": [0.1, 0.3],
                 'n_estimators': [20, 50, 100],
                 'max_depth': [2, 3, 5, 10]
             },
@@ -183,7 +183,7 @@ class MLForecast():
             verbose=self.verbose, param_grid={
                 'n_estimators': [20, 50, 100],
                 "max_depth": [2, 5, 10],
-                "min_samples_splits": [0.1, 0.3],
+                "min_samples_split": [0.1, 0.3],
                 "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
             },
             scoring='r2', n_jobs=n_cpus
