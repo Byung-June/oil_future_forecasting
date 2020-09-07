@@ -191,7 +191,7 @@ if __name__ == '__main__':
         if 'curde_future' in exogenous.columns:
             exogenous = exogenous.drop('crude_future', axis=1)
 
-    for filter_method in ['none', 'moving_average', 'wavelet_db1']:
+    for filter_method in ['moving_average', 'wavelet_db1', 'none']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)
