@@ -63,9 +63,6 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     start_time = n_windows + n_samples - 2
     end_time = len(filtered) - 1
 
-    if filter_method != 'none':
-        y_test_filtered = filtered['y_test']
-        print(r2_score(y_test_before_filtered, y_test_filtered))
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time)
 
