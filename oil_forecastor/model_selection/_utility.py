@@ -103,31 +103,32 @@ def adf_test(data_):
 
 def denoising_func(data_, filter):
     if filter == 'wavelet_db1':
-        data_['y_test'] = denoise_wavelet(
-            np.array(data_['y_test']).reshape([-1, 1]),
+        data_['y_test_filtered'] = denoise_wavelet(
+            np.array(data_['y_test_filtered']).reshape([-1, 1]),
             wavelet='db1', mode='soft', wavelet_levels=2,
             multichannel=True, rescale_sigma=True
         )
     elif filter == 'wavelet_db2':
-        data_['y_test'] = denoise_wavelet(
-            np.array(data_['y_test']).reshape([-1, 1]),
+        data_['y_test_filtered'] = denoise_wavelet(
+            np.array(data_['y_test_filtered']).reshape([-1, 1]),
             wavelet='db2', mode='soft', wavelet_levels=2,
             multichannel=True, rescale_sigma=True
         )
     elif filter == 'bilateral':
-        data_['y_test'] = np.exp(
+        data_['y_test_filtered'] = np.exp(
             denoise_bilateral(
                 np.array(
                     [
                         x * np.log(1 + abs(x))
                         if x > 0 else - x * np.log(1 + abs(x))
-                        for x in np.array(data_['y_test'])
+                        for x in np.array(data_['y_test_filtered'])
                     ]
                 ),
                 sigma_spatial=1000, multichannel=False)
         ) - 1
     elif filter == 'moving_average':
-        data_['y_test'] = data_.y_test.rolling(window=5).mean()
+        data_['y_test_filtered']\
+            = data_.y_test_filtered.rolling(window=5).mean()
     elif filter is None or filter.lower() == 'none':
         pass
     else:
