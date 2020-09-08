@@ -66,44 +66,6 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time)
 
-    print("dtr")
-    res_dtr = ml_forecast.decision_tree_reg(
-        n_features=n_features, method='f-classif'
-    )
-    res_dtr = pd.concat([res_dtr, y_test_before_filtered],
-                        axis=1)
-    r2_test, r2_filtered_test = evaluation(res_dtr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
-    name_lin_reg = make_name("res_dtr", sw_tuple, n_features, arguments)
-    res_dtr.to_csv(name_lin_reg + ".csv")
-
-    print("rfr")
-    res_rfr = ml_forecast.rand_forest_reg()
-    res_rfr = pd.concat([res_rfr, y_test_before_filtered],
-                        axis=1)
-    r2_test, r2_filtered_test = evaluation(res_rfr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
-    name_lin_reg = make_name("res_rfr", sw_tuple, n_features, arguments)
-    res_rfr.to_csv(name_lin_reg + ".csv")
-
-    print("gbr")
-    res_gbr = ml_forecast.grad_boost_reg()
-    res_gbr = pd.concat([res_gbr, y_test_before_filtered],
-                        axis=1)
-    r2_test, r2_filtered_test = evaluation(res_gbr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
-    name_lin_reg = make_name("res_gbr", sw_tuple, n_features, arguments)
-    res_gbr.to_csv(name_lin_reg + ".csv")
-
-    print("hgbr")
-    res_hgbr = ml_forecast.hist_grad_boost_reg()
-    res_hgbr = pd.concat([res_hgbr, y_test_before_filtered],
-                         axis=1)
-    r2_test, r2_filtered_test = evaluation(res_hgbr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
-    name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
-    res_hgbr.to_csv(name_lin_reg + ".csv")
-
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method='f-classif'
@@ -161,6 +123,44 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_kr", sw_tuple, n_features, arguments)
     res_kr.to_csv(name_lin_reg + ".csv")
+
+    print("dtr")
+    res_dtr = ml_forecast.decision_tree_reg(
+        n_features=n_features, method='f-classif'
+    )
+    res_dtr = pd.concat([res_dtr, y_test_before_filtered],
+                        axis=1)
+    r2_test, r2_filtered_test = evaluation(res_dtr)
+    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    name_lin_reg = make_name("res_dtr", sw_tuple, n_features, arguments)
+    res_dtr.to_csv(name_lin_reg + ".csv")
+
+    print("rfr")
+    res_rfr = ml_forecast.rand_forest_reg()
+    res_rfr = pd.concat([res_rfr, y_test_before_filtered],
+                        axis=1)
+    r2_test, r2_filtered_test = evaluation(res_rfr)
+    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    name_lin_reg = make_name("res_rfr", sw_tuple, n_features, arguments)
+    res_rfr.to_csv(name_lin_reg + ".csv")
+
+    print("gbr")
+    res_gbr = ml_forecast.grad_boost_reg()
+    res_gbr = pd.concat([res_gbr, y_test_before_filtered],
+                        axis=1)
+    r2_test, r2_filtered_test = evaluation(res_gbr)
+    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    name_lin_reg = make_name("res_gbr", sw_tuple, n_features, arguments)
+    res_gbr.to_csv(name_lin_reg + ".csv")
+
+    print("hgbr")
+    res_hgbr = ml_forecast.hist_grad_boost_reg()
+    res_hgbr = pd.concat([res_hgbr, y_test_before_filtered],
+                         axis=1)
+    r2_test, r2_filtered_test = evaluation(res_hgbr)
+    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
+    res_hgbr.to_csv(name_lin_reg + ".csv")
 
 
 if __name__ == '__main__':
