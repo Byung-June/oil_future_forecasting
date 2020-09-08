@@ -33,7 +33,7 @@ def evaluation(df):
     df = df.dropna()
     y_test = df['y_test'].values.flatten()
     y_pred = df['y_pred'].values.flatten()
-    y_filtered_test = df['y_filtered_test'].values.flatten()
+    y_filtered_test = df['y_test_filtered'].values.flatten()
     return r2_score(y_test, y_pred), r2_score(y_filtered_test, y_pred)
 
 
@@ -54,6 +54,7 @@ def make_name(name, sw_tuple, n_features, args):
 def main(exogenous, filter_method, n_features, sw_tuple):
     # you are reusing exogenous....
     y_test_before_filtered = copy.deepcopy(exogenous['y_test']).to_frame()
+    exogenous = exogenous.drop('y_test', axis=1)
     if filter_method != 'none':
         filtered = denoising_func(exogenous, filter_method)
     else:
@@ -178,14 +179,15 @@ if __name__ == '__main__':
 
     if 'y_test' not in exogenous.columns:
         if 'crude_future' in exogenous.columns:
-            exogenous = exogenous.rename(columns={'crude_future': 'y_test'})
+            exogenous = exogenous.rename(
+                columns={'crude_future': 'y_test_filtered'})
         else:
             raise Exception("There must be a true data")
     else:
         if 'curde_future' in exogenous.columns:
             exogenous = exogenous.drop('crude_future', axis=1)
 
-    for filter_method in ['moving_average', 'wavelet_db1', 'none']:
+    for filter_method in ['none']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)

@@ -32,8 +32,8 @@ def rolling_train_test_split(data_, window_num, sample_num, time):
     if data_.columns[0] == 'date':
         data_ = data_.set_index('date')
     assert 'crude_future' not in data_.columns
-    data_y = data_['y_test']
-    data_x = data_.drop(['y_test'], axis=1)
+    data_y = data_['y_test_filtered']
+    data_x = data_.drop(['y_test_filtered'], axis=1)
     if type(time) == str:
         time = datetime.datetime.strptime(time, '%Y-%m-%d')
     if type(time) == datetime.datetime:
