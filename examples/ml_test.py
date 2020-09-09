@@ -2,7 +2,6 @@ import numpy as np
 import os
 import copy
 from oil_forecastor.ml_forecastor.forecast import MLForecast
-from oil_forecastor.model_selection import denoising_func
 import pandas as pd
 import argparse
 import warnings
@@ -53,12 +52,16 @@ def make_name(name, sw_tuple, n_features, args):
 
 def main(exogenous, filter_method, n_features, sw_tuple):
     # you are reusing exogenous....
+    exogenous = exogenous.drop('y_true', axis=1)
     y_test_before_filtered = copy.deepcopy(exogenous['y_test']).to_frame()
+    y_test_filtered = copy.deepcopy(exogenous['y_test_filtered']).to_frame()
     exogenous = exogenous.drop('y_test', axis=1)
+    exogenous = exogenous.drop('y_test_filtered', axis=1)
     if filter_method != 'none':
-        filtered = denoising_func(exogenous, filter_method)
+        filtered = pd.concat([exogenous, y_test_filtered], axis=1)
     else:
-        filtered = exogenous
+        filtered = pd.concat([exogenous, y_test_before_filtered], axis=1)
+        filtered = filtered.rename(columns={'y_test': 'y_test_filtered'})
 
     n_samples, n_windows = sw_tuple
     start_time = n_windows + n_samples - 2
@@ -188,7 +191,7 @@ if __name__ == '__main__':
         if 'curde_future' in exogenous.columns:
             exogenous = exogenous.drop('crude_future', axis=1)
 
-    for filter_method in ['moving_average', 'none']:
+    for filter_method in ['not_none', 'none']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)
