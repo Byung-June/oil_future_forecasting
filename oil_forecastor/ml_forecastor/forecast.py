@@ -16,31 +16,61 @@ from sklearn.svm import SVR
 from sklearn.kernel_ridge import KernelRidge
 from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
+from ..model_selection._utility import adf_test
+import copy
 
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
+def recover(i, diff_order, y_pred, y_true):
+    y_t = y_true.iloc[i]
+    y_t_before = y_true.iloc[i - 1]
+    y_t_2 = y_true.iloc[i - 2]
+    if diff_order == 0:
+        y_pred_recovered = y_pred
+    elif diff_order == 1:
+        y_pred_recovered = y_pred + y_t
+    elif diff_order == 2:
+        y_pred_recovered = y_pred + 2 * y_t - y_t_before
+    elif diff_order == 3:
+        y_pred_recovered = y_pred - 3 * y_t + 3 * y_t_before - y_t_2
+    else:
+        raise ValueError("Too high diff order")
+    return y_pred_recovered
+
+
+def auto_diff(train_test):
+    train_test = list(train_test)
+    diff_order = max(adf_test(train_test[2]))
+    train_test[0] = train_test[0][diff_order:, ...]
+    train_test[-2] = np.diff(train_test[-2], diff_order)
+    return train_test, diff_order
+
+
 def rolling(func):
     @wraps(func)
-    def train_model_wrapper(
-        self,
-        n_features=np.inf, method=None, *args, **kwargs
-    ):
-        sample_date = pd.to_datetime(
-            self.data.index[:self.end_time_idx]
-        )
+    def train_model_wrapper(self,
+                            n_features=np.inf, method=None, *args, **kwargs):
+        sample_date = pd.to_datetime(self.data.index[:self.end_time_idx])
         df = pd.DataFrame(np.nan,
                           index=self.data.index,
-                          columns=['y_pred', 'y_test_filtered'])
+                          columns=['y_pred', 'y_test_filtered',
+                                   'y_pred_before_recovered', 'y_true'])
         # add one day because the test date is one day
         # after the last date of thetraining dataset
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
             train_test = self._data_helper(i, n_features, method)
+            train_test, diff_order = auto_diff(train_test)
+
             y_pred = func(self, train_test, n_features, method)
+            y_pred_recov = recover(i, diff_order, y_pred, self.y_true)
+
             df['y_test_filtered'].iloc[i+1] = train_test[-1].flatten()
-            df['y_pred'].iloc[i+1] = y_pred.flatten()
+            df['y_pred_before_recovered'].iloc[i+1] = y_pred.flatten()
+            df['y_pred'].iloc[i+1] = y_pred_recov.flatten()
+            df['y_true'].iloc[i] = self.y_true.iloc[i]
         return df
     return train_model_wrapper
 
@@ -48,6 +78,8 @@ def rolling(func):
 class MLForecast():
     def __init__(self, data, n_windows, n_samples, start_time, end_time):
         self.data = data
+        self.y_true = copy.deepcopy(self.data['y_true'])
+        self.data = self.data.drop('y_true', axis=1)
         self.n_windows, self.n_samples = n_windows, n_samples
         self.start_time = pd.to_datetime(data.index[start_time])
         self.end_time_idx = end_time

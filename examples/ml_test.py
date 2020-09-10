@@ -28,12 +28,23 @@ if arguments.ignore_warnings:
     warnings.filterwarnings('ignore')
 
 
-def evaluation(df):
+def evaluation(df, delete_outlier=True):
     df = df.dropna()
-    y_test = df['y_test'].values.flatten()
-    y_pred = df['y_pred'].values.flatten()
+    # y_test_before_filtered = df['y_test'].values.flatten()
+    y_pred_before_recovered = df['y_pred_before_recovered'].values.flatten()
     y_filtered_test = df['y_test_filtered'].values.flatten()
-    return r2_score(y_test, y_pred), r2_score(y_filtered_test, y_pred)
+
+    y_pred = df['y_pred'].values.flatten()
+    if delete_outlier:
+        mean = y_pred.mean()
+        std = y_pred.std()
+        y_pred = np.where(y_pred >= mean + 3 * std,
+                          mean + 3 * std, y_pred)
+        y_pred = np.where(y_pred <= mean - 3 * std,
+                          mean - 3 * std, y_pred)
+    y_true = df['y_true'].values.flatten()
+    return r2_score(y_true, y_pred),\
+        r2_score(y_filtered_test, y_pred_before_recovered)
 
 
 def make_name(name, sw_tuple, n_features, args):
@@ -51,8 +62,7 @@ def make_name(name, sw_tuple, n_features, args):
 
 
 def main(exogenous, filter_method, n_features, sw_tuple):
-    # you are reusing exogenous....
-    exogenous = exogenous.drop('y_true', axis=1)
+    # exogenous = exogenous.drop('y_true', axis=1)
     y_test_before_filtered = copy.deepcopy(exogenous['y_test']).to_frame()
     y_test_filtered = copy.deepcopy(exogenous['y_test_filtered']).to_frame()
     exogenous = exogenous.drop('y_test', axis=1)
