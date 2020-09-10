@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np
-# from data_preprocessing._data_utils import *
-# from data_preprocessing.data_jodi import jodi_read
 from _data_utils import stationary_df, make_stationary
 from _data_utils import df_slicing, fill_bs_date, future_rolling, make_float
 from _data_utils import scaler_with_nan
-from data_jodi import jodi_read
+from _data_jodi import jodi_read
 from ml_data_preprocessing.make_data import make_data
 from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
 import copy
@@ -50,8 +48,15 @@ def column_fill_name(columns, new_columns):
     return new_columns
 
 
-if __name__ == "__main__":
-    # %%
+def resample_df(df_, freq='W'):
+    df_2 = copy.deepcopy(df_)
+    df_2['ddd'] = df_.index
+    df_2 = df_2.resample(freq).last()
+    df_2 = df_2.set_index('ddd')
+    return df_2
+
+
+def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01', scaler=False):
     url_list_daily = [
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_FUT_S1_D.xls',
@@ -95,8 +100,6 @@ if __name__ == "__main__":
          ]
     ]
 
-    start_date = '2002-03-30'
-    end_date = '2020-06-01'
     df_d = []
     df_w = []
     df_m = [jodi_read(),
@@ -115,34 +118,25 @@ if __name__ == "__main__":
     df_d = pd.concat(df_d, axis=1, join='outer').loc[df_d[0].index]
     df_d = fill_bs_date(df_d.index, df_d)
     df_d = future_rolling(df_d, method='productive').dropna()
+
+    # resampling frequency before making return
+    if freq == 'W':
+        df_d = resample_df(df_d)
     b_index = df_d.index
 
-    # %%
     df_y = df_d.iloc[:, [0]].shift(-1)
-    df_y['y_test_filtered'] = np.log(denoising_func(copy.deepcopy(df_y), filter='moving_average')).diff()
-    df_y['y_true'] = df_y['y_test'].values
-    df_y['y_test'] = np.log(df_y['y_test']).diff()
-    # df_y['y_test_filtered'] = denoising_func(copy.copy(df_y), filter='moving_average').diff()
-    # df_y['y_test'] = df_y['y_test'].diff()
-    print(df_y)
-    # df_y = df_d.iloc[:, [0]].diff().shift(-1)
+    df_y['y_test'] = df_y['y_test'].pct_change()
+
     df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
     df_y['crude_future_daily_lag1'] = df_y['y_test'].shift(2)
     df_y['crude_future_daily_lag2'] = df_y['y_test'].shift(3)
     df_y['crude_future_daily_lag3'] = df_y['y_test'].shift(4)
     df_y['crude_future_daily_lag4'] = df_y['y_test'].shift(5)
 
-    df_y['y_test_filtered_lag0'] = df_y['y_test_filtered'].shift(1)
-    df_y['y_test_filtered_lag1'] = df_y['y_test_filtered'].shift(2)
-    df_y['y_test_filtered_lag2'] = df_y['y_test_filtered'].shift(3)
-    df_y['y_test_filtered_lag3'] = df_y['y_test_filtered'].shift(4)
-    df_y['y_test_filtered_lag4'] = df_y['y_test_filtered'].shift(5)
-
     col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
     df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 1:], col_stationary_index, col_stationary_diff),
                     left_index=True, right_index=True, how='outer')
     df_d = fill_bs_date(b_index, df_d)
-    # print('df_d', df_d.columns)
 
     # Week
     df_w = df_w[0]
@@ -176,11 +170,11 @@ if __name__ == "__main__":
     # Merge (Freq)
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')
     df = pd.merge(df, df_m, left_index=True, right_index=True, how='left')
-    df = df[['y_true', 'y_test', 'crude_future_daily_lag0', 'crude_future_daily_lag1',
+    df = df[['y_test', 'crude_future_daily_lag0', 'crude_future_daily_lag1',
              'crude_future_daily_lag2', 'crude_future_daily_lag3',
              'crude_future_daily_lag4',
-             'y_test_filtered', 'y_test_filtered_lag0', 'y_test_filtered_lag1',
-             'y_test_filtered_lag2', 'y_test_filtered_lag3', 'y_test_filtered_lag4',
+             # 'y_test_filtered', 'y_test_filtered_lag0', 'y_test_filtered_lag1',
+             # 'y_test_filtered_lag2', 'y_test_filtered_lag3', 'y_test_filtered_lag4',
              'wti_spot_daily', 'ngl_spot_daily',
              'ngl_furture_daily', 'brent_spot_daily',
              'cur_weekly',
@@ -190,7 +184,6 @@ if __name__ == "__main__":
     df = df.fillna(method='ffill')
 
     # Merge EPU data
-    # df2 = pd.read_csv('df_whole_new.csv', index_col='date')
     df2 = make_data()
     df2 = df_slicing(fill_bs_date(b_index, df2), start=start_date, end=end_date).dropna(how='all', axis=1)
 
@@ -198,8 +191,14 @@ if __name__ == "__main__":
     df_input.index.name = 'date'
     df_input = df_input.dropna()
 
-    # df_x = scaler_with_nan(df_input.iloc[:, 6:])
-    # df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
-    # print('final', df_input, len(df_input.columns))
-    df_input.to_csv('ma_log_diff_no_scaler_ml_data.csv')
+    if scaler:
+        df_x = scaler_with_nan(df_input.iloc[:, 6:])
+        df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
 
+    df_input.to_csv(filename)
+    return df_input
+
+
+if __name__ == '__main__':
+    gen_data(filename='ml_data_W.csv', freq='W')
+    # gen_data(filename='ml_data_D.csv', freq='D')
