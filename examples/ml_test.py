@@ -6,6 +6,7 @@ import pandas as pd
 import argparse
 import warnings
 from sklearn.metrics import r2_score
+from oil_forecastor.model_selection import denoising_func
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -22,6 +23,7 @@ parser.add_argument('--ignore-warnings', default=True, action='store_false')
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
+parser.add_argument('--prefilter', default=False, type=bool)
 arguments = parser.parse_args()
 
 if arguments.ignore_warnings:
@@ -30,7 +32,7 @@ if arguments.ignore_warnings:
 
 def evaluation(df, delete_outlier=True):
     df = df.dropna()
-    # y_test_before_filtered = df['y_test'].values.flatten()
+    # y_test_no_prefilter = df['y_test'].values.flatten()
     y_pred_before_recovered = df['y_pred_before_recovered'].values.flatten()
     y_filtered_test = df['y_test_filtered'].values.flatten()
 
@@ -61,17 +63,20 @@ def make_name(name, sw_tuple, n_features, args):
     return path
 
 
-def main(exogenous, filter_method, n_features, sw_tuple):
+def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     # exogenous = exogenous.drop('y_true', axis=1)
-    y_test_before_filtered = copy.deepcopy(exogenous['y_test']).to_frame()
+    y_test_no_prefilter = copy.deepcopy(exogenous['y_test']).to_frame()
     y_test_filtered = copy.deepcopy(exogenous['y_test_filtered']).to_frame()
     exogenous = exogenous.drop('y_test', axis=1)
     exogenous = exogenous.drop('y_test_filtered', axis=1)
-    if filter_method != 'none':
-        filtered = pd.concat([exogenous, y_test_filtered], axis=1)
+
+    if prefiltered:
+        prefiltered = pd.concat([exogenous, y_test_filtered], axis=1)
     else:
-        filtered = pd.concat([exogenous, y_test_before_filtered], axis=1)
-        filtered = filtered.rename(columns={'y_test': 'y_test_filtered'})
+        prefiltered = pd.concat([exogenous, y_test_no_prefilter], axis=1)
+        prefiltered = prefiltered.rename(columns={'y_test': 'y_test_filtered'})
+
+    filtered = denoising_func(prefiltered, filter_method)
 
     n_samples, n_windows = sw_tuple
     start_time = n_windows + n_samples - 2
@@ -84,7 +89,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method='f-classif'
     )
-    res_linear_reg = pd.concat([res_linear_reg, y_test_before_filtered],
+    res_linear_reg = pd.concat([res_linear_reg, y_test_no_prefilter],
                                axis=1)
     r2_test, r2_filtered_test = evaluation(res_linear_reg)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -95,7 +100,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method='f-classif'
     )
-    res_lasso = pd.concat([res_lasso, y_test_before_filtered],
+    res_lasso = pd.concat([res_lasso, y_test_no_prefilter],
                           axis=1)
     r2_test, r2_filtered_test = evaluation(res_lasso)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -105,7 +110,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
-    res_pcr = pd.concat([res_pcr, y_test_before_filtered],
+    res_pcr = pd.concat([res_pcr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_pcr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -117,7 +122,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_svr = ml_forecast.svr(n_features=50, method='f-classif')
     else:
         res_svr = ml_forecast.svr(n_features=n_features, method='f-classif')
-    res_svr = pd.concat([res_svr, y_test_before_filtered],
+    res_svr = pd.concat([res_svr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_svr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -131,7 +136,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
         res_kr = ml_forecast.kernel_ridge(
             n_features=n_features, method='f-classif'
         )
-    res_kr = pd.concat([res_kr, y_test_before_filtered],
+    res_kr = pd.concat([res_kr, y_test_no_prefilter],
                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_kr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -142,7 +147,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method='f-classif'
     )
-    res_dtr = pd.concat([res_dtr, y_test_before_filtered],
+    res_dtr = pd.concat([res_dtr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_dtr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -151,7 +156,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
-    res_rfr = pd.concat([res_rfr, y_test_before_filtered],
+    res_rfr = pd.concat([res_rfr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_rfr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -160,7 +165,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
-    res_gbr = pd.concat([res_gbr, y_test_before_filtered],
+    res_gbr = pd.concat([res_gbr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_gbr)
     print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
@@ -169,7 +174,7 @@ def main(exogenous, filter_method, n_features, sw_tuple):
 
     # print("hgbr")
     # res_hgbr = ml_forecast.hist_grad_boost_reg()
-    # res_hgbr = pd.concat([res_hgbr, y_test_before_filtered],
+    # res_hgbr = pd.concat([res_hgbr, y_test_no_prefilter],
     #                      axis=1)
     # r2_test, r2_filtered_test = evaluation(res_hgbr)
     # print('r2 test {}, r2 filtered test {}'.format(r2_test,
@@ -201,7 +206,7 @@ if __name__ == '__main__':
         if 'curde_future' in exogenous.columns:
             exogenous = exogenous.drop('crude_future', axis=1)
 
-    for filter_method in ['not_none', 'none']:
+    for filter_method in ['moving_average', 'none']:
         for n_features in [np.inf, 10]:
             for sw_tuple in [(45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)
