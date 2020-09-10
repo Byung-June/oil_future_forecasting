@@ -7,6 +7,8 @@ from _data_utils import df_slicing, fill_bs_date, future_rolling, make_float
 from _data_utils import scaler_with_nan
 from data_jodi import jodi_read
 from ml_data_preprocessing.make_data import make_data
+from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
+import copy
 
 
 def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
@@ -116,12 +118,26 @@ if __name__ == "__main__":
     b_index = df_d.index
 
     # %%
-    df_y = df_d.iloc[:, [0]].pct_change().shift(-1)
+    df_y = df_d.iloc[:, [0]].shift(-1)
+    df_y['y_test_filtered'] = np.log(denoising_func(copy.deepcopy(df_y), filter='moving_average')).diff()
+    df_y['y_true'] = df_y['y_test'].values
+    df_y['y_test'] = np.log(df_y['y_test']).diff()
+    # df_y['y_test_filtered'] = denoising_func(copy.copy(df_y), filter='moving_average').diff()
+    # df_y['y_test'] = df_y['y_test'].diff()
+    print(df_y)
+    # df_y = df_d.iloc[:, [0]].diff().shift(-1)
     df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
     df_y['crude_future_daily_lag1'] = df_y['y_test'].shift(2)
     df_y['crude_future_daily_lag2'] = df_y['y_test'].shift(3)
     df_y['crude_future_daily_lag3'] = df_y['y_test'].shift(4)
     df_y['crude_future_daily_lag4'] = df_y['y_test'].shift(5)
+
+    df_y['y_test_filtered_lag0'] = df_y['y_test_filtered'].shift(1)
+    df_y['y_test_filtered_lag1'] = df_y['y_test_filtered'].shift(2)
+    df_y['y_test_filtered_lag2'] = df_y['y_test_filtered'].shift(3)
+    df_y['y_test_filtered_lag3'] = df_y['y_test_filtered'].shift(4)
+    df_y['y_test_filtered_lag4'] = df_y['y_test_filtered'].shift(5)
+
     col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
     df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 1:], col_stationary_index, col_stationary_diff),
                     left_index=True, right_index=True, how='outer')
@@ -160,9 +176,12 @@ if __name__ == "__main__":
     # Merge (Freq)
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')
     df = pd.merge(df, df_m, left_index=True, right_index=True, how='left')
-    df = df[['y_test', 'crude_future_daily_lag0', 'crude_future_daily_lag1',
+    df = df[['y_true', 'y_test', 'crude_future_daily_lag0', 'crude_future_daily_lag1',
              'crude_future_daily_lag2', 'crude_future_daily_lag3',
-             'crude_future_daily_lag4', 'wti_spot_daily', 'ngl_spot_daily',
+             'crude_future_daily_lag4',
+             'y_test_filtered', 'y_test_filtered_lag0', 'y_test_filtered_lag1',
+             'y_test_filtered_lag2', 'y_test_filtered_lag3', 'y_test_filtered_lag4',
+             'wti_spot_daily', 'ngl_spot_daily',
              'ngl_furture_daily', 'brent_spot_daily',
              'cur_weekly',
              'CRUDEOIL_closingstock_total', 'CRUDEOIL_export_total', 'CRUDEOIL_import_total',
@@ -179,8 +198,8 @@ if __name__ == "__main__":
     df_input.index.name = 'date'
     df_input = df_input.dropna()
 
-    df_x = scaler_with_nan(df_input.iloc[:, 6:])
-    df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
+    # df_x = scaler_with_nan(df_input.iloc[:, 6:])
+    # df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
     # print('final', df_input, len(df_input.columns))
-    df_input.to_csv('ml_data.csv')
+    df_input.to_csv('ma_log_diff_no_scaler_ml_data.csv')
 

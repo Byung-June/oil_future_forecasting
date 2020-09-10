@@ -115,17 +115,21 @@ def denoising_func(data_, filter):
             multichannel=True, rescale_sigma=True
         )
     elif filter == 'bilateral':
-        data_['y_test'] = np.exp(
-            denoise_bilateral(
-                np.array(
-                    [
-                        x * np.log(1 + abs(x))
-                        if x > 0 else - x * np.log(1 + abs(x))
-                        for x in np.array(data_['y_test'])
-                    ]
-                ),
+        # data_['y_test'] = np.exp(
+        #     denoise_bilateral(
+        #         np.array(
+        #             [
+        #                 x * np.log(1 + abs(x))
+        #                 if x > 0 else - x * np.log(1 + abs(x))
+        #                 for x in np.array(data_['y_test'])
+        #             ]
+        #         ),
+        #         sigma_spatial=1000, multichannel=False)
+        # ) - 1
+        data_['y_test'] = denoise_bilateral(
+                np.array(data_['y_test']),
                 sigma_spatial=1000, multichannel=False)
-        ) - 1
+
     elif filter == 'moving_average':
         data_['y_test'] = data_.y_test.rolling(window=5).mean()
     elif filter is None or filter.lower() == 'none':

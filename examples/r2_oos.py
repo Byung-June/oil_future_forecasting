@@ -1,18 +1,17 @@
 import pandas as pd
 import numpy as np
 import glob
+import os
 from sklearn.metrics import r2_score
 
 
 def r2_oos_func(data_):
     data_ = pd.read_csv(data_, index_col=1)
     data_ = data_.drop(columns=['Unnamed: 0'])
-    pred = data_.iloc[:, 0]
-    y = data_.iloc[:, 1]
-    r2_oos = 1 - sum(pow(pred-y, 2)) / sum(pow(y, 2))
-    # print(sum(pow(pred-y, 2)))
-    # print(sum(pow(y-data_.iloc[:, 1].mean(), 2)))
-    return r2_oos, data_
+    y_pred = data_.iloc[:, 0]
+    y_test = data_.iloc[:, 1]
+    r2_oos = r2_score(y_test, y_pred)
+    return r2_oos
 
 
 def ladder_test(y_test, y_pred, n_dates):
@@ -25,8 +24,8 @@ def ladder_test(y_test, y_pred, n_dates):
     return r_square
 
 
-def r2_oos_ml(path='../results'):
-    names = glob.glob(path + '/*.npz')
+def r2_oos_ml(path='../results', file='/*.npz'):
+    names = glob.glob(path + file)
     y_test_names = [name for name in names if 'y_test' in name]
     y_pred_names = [name for name in names if 'y_test' not in name]
 
@@ -49,3 +48,13 @@ def r2_oos_ml(path='../results'):
             dict_[name_] = r_square
     df = pd.DataFrame(dict_, index=[0])
     df.to_csv('r_2.csv')
+
+
+if __name__ == "__main__":
+    path = os.getcwd()
+    file = '\*.csv'
+    data_list = glob.glob(path + file)
+    for data in data_list:
+        df = pd.read_csv(data)
+        print(data, r2_oos_func(data))
+    # r2_oos_ml(path=path, file=file)
