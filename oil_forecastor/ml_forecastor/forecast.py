@@ -18,6 +18,7 @@ from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
 from ..model_selection._utility import adf_test
 import copy
+from sklearn.preprocessing import RobustScaler
 
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
@@ -61,10 +62,14 @@ def rolling(func):
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
-            train_test = self._data_helper(i, n_features, method)
+            train_test, y_transformer\
+                = self._data_helper(i, n_features, method)
             train_test, diff_order = auto_diff(train_test)
 
             y_pred = func(self, train_test, n_features, method)
+            y_pred = y_pred.reshape(1, 1)
+            y_pred = y_transformer.inverse_transform(y_pred)
+            y_pred = y_pred.flatten()
             y_pred_recov = recover(i, diff_order, y_pred, self.y_true)
             y_pred_zero = recover(i, diff_order, 0.0, self.y_true)
 
@@ -87,8 +92,16 @@ class MLForecast():
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
 
-    def _data_helper(self, time_idx, n_features, method):
+    def _scaler(self, X_train, y_train,
+                method='robust'):
+        if len(y_train.shape) < 2:
+            y_train = y_train.reshape(y_train.shape[0], 1)
+        if method == 'robust':
+            X_transformer = RobustScaler().fit(X_train)
+            y_transformer = RobustScaler().fit(y_train)
+        return X_transformer, y_transformer
 
+    def _data_helper(self, time_idx, n_features, method):
         data_tuple = rolling_train_test_split(
                 self.data, self.n_windows, self.n_samples, time_idx
             )
@@ -99,14 +112,24 @@ class MLForecast():
         X_train = X_train.reshape(-1, X_train.shape[-1])
         X_train = np.transpose(X_train)
         X_test = X_test.reshape(X_test.shape[-1], -1)
-        y_train = np.array(data_tuple[2])
-        y_test = np.array(data_tuple[3])
+        y_train = np.array(data_tuple[2]).reshape(-1, 1)
+        y_test = np.array(data_tuple[3]).reshape(1, 1)
+
+        X_transformer, y_transformer = self._scaler(X_train, y_train,
+                                                    method='robust')
+
+        X_train_scaled = X_transformer.fit(X_train)
+        y_train_scaled = y_transformer.fit(y_train)
+        X_test_scaled = X_transformer.fit(X_test)
+        y_test_scaled = y_transformer.fit(y_test)
 
         if n_features < np.inf:
-            X_train, X_test, y_train, y_test = selector(
-                X_train, X_test, y_train, y_test, n_features, method
-            )
-        return X_train, X_test, y_train, y_test
+            X_train, X_test, y_train, y_test\
+                = selector(X_train_scaled, X_test_scaled,
+                           y_train_scaled, y_test_scaled,
+                           n_features, method)
+        y_train, y_test = y_train.flatten(), y_test.flatten()
+        return (X_train, X_test, y_train, y_test), y_transformer
 
     @rolling
     def linear_reg(self, train_test, n_features=np.inf, method=None):
