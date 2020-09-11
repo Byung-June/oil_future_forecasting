@@ -118,10 +118,10 @@ class MLForecast():
         X_transformer, y_transformer = self._scaler(X_train, y_train,
                                                     method='robust')
 
-        X_train_scaled = X_transformer.fit(X_train)
-        y_train_scaled = y_transformer.fit(y_train)
-        X_test_scaled = X_transformer.fit(X_test)
-        y_test_scaled = y_transformer.fit(y_test)
+        X_train_scaled = X_transformer.fit_transform(X_train)
+        y_train_scaled = y_transformer.fit_transform(y_train)
+        X_test_scaled = X_transformer.fit_transform(X_test)
+        y_test_scaled = y_transformer.fit_transform(y_test)
 
         if n_features < np.inf:
             X_train, X_test, y_train, y_test\
