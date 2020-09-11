@@ -194,7 +194,7 @@ if __name__ == '__main__':
             exogenous = exogenous.drop('crude_future', axis=1)
 
     for filter_method in ['moving_average', 'none']:
-        for n_features in [50, 10, np.inf]:
+        for n_features in [np.inf, 50, 10]:
             for sw_tuple in [(arguments.n_samples, arguments.n_windows),
                              (45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)

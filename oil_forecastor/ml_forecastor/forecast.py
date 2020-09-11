@@ -16,7 +16,7 @@ from sklearn.svm import SVR
 from sklearn.kernel_ridge import KernelRidge
 from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
-from ..model_selection._utility import adf_test
+# from ..model_selection._utility import adf_test
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
@@ -26,10 +26,10 @@ warnings.filterwarnings('ignore')
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
-def recover(i, diff_order, y_pred, y_true):
-    y_t = y_true.iloc[i]
-    y_t_before = y_true.iloc[i - 1]
-    y_t_2 = y_true.iloc[i - 2]
+def recover(i, diff_order, y_pred, y_test):
+    y_t = y_test.iloc[i]
+    y_t_before = y_test.iloc[i - 1]
+    y_t_2 = y_test.iloc[i - 2]
     if diff_order == 0:
         y_pred_recovered = y_pred
     elif diff_order == 1:
@@ -45,7 +45,8 @@ def recover(i, diff_order, y_pred, y_true):
 
 def auto_diff(train_test):
     train_test = list(train_test)
-    diff_order = max(adf_test(train_test[2]))
+    # diff_order = max(adf_test(train_test[2]))
+    diff_order = 1
     train_test[0] = train_test[0][diff_order:, ...]
     train_test[-2] = np.diff(train_test[-2], diff_order)
     return train_test, diff_order
@@ -73,8 +74,8 @@ def rolling(func):
             y_pred = y_pred.reshape(1, 1)
             y_pred = y_transformer.inverse_transform(y_pred)
             y_pred = y_pred.flatten()
-            y_pred_recov = recover(i, diff_order, y_pred, self.y_true)
-            y_pred_zero = recover(i, diff_order, 0.0, self.y_true)
+            y_pred_recov = recover(i, diff_order, y_pred, self.y_test)
+            y_pred_zero = recover(i, diff_order, 0.0, self.y_test)
 
             df['y_test_filtered'].iloc[i+1] = train_test[-1].flatten()
             df['y_pred_zero'].iloc[i+1] = y_pred_zero
@@ -88,6 +89,7 @@ class MLForecast():
     def __init__(self, data, n_windows, n_samples, start_time, end_time):
         self.data = data
         self.y_true = copy.deepcopy(self.data['y_true'])
+        self.y_test = copy.deepcopy(self.data['y_test_filtered'])
         self.data = self.data.drop('y_true', axis=1)
         self.n_windows, self.n_samples = n_windows, n_samples
         self.start_time = pd.to_datetime(data.index[start_time])
