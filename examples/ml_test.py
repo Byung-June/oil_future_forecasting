@@ -27,6 +27,7 @@ parser.add_argument('--selected-inputs', default=True, action='store_false')
 parser.add_argument('--prefilter', default=False, type=bool)
 parser.add_argument('--n-windows', default=5, type=int)
 parser.add_argument('--n-samples', default=15, type=int)
+parser.add_argument('--selector', default='f-regression', type=str)
 arguments = parser.parse_args()
 
 if arguments.ignore_warnings:
@@ -71,7 +72,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
-        n_features=n_features, method='f-classif'
+        n_features=n_features, method=arguments.selector
     )
     res_linear_reg = pd.concat([res_linear_reg, y_test_no_prefilter],
                                axis=1)
@@ -82,7 +83,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("lasso")
     res_lasso = ml_forecast.lasso(
-        n_features=n_features, method='f-classif'
+        n_features=n_features, method=arguments.selector
     )
     res_lasso = pd.concat([res_lasso, y_test_no_prefilter],
                           axis=1)
@@ -103,9 +104,10 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("svr")
     if n_features > 100:
-        res_svr = ml_forecast.svr(n_features=50, method='f-classif')
+        res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
     else:
-        res_svr = ml_forecast.svr(n_features=n_features, method='f-classif')
+        res_svr = ml_forecast.svr(n_features=n_features,
+                                  method=arguments.selector)
     res_svr = pd.concat([res_svr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_svr)
@@ -115,10 +117,11 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("kr")
     if n_features > 100:
-        res_kr = ml_forecast.kernel_ridge(n_features=50, method='f-classif')
+        res_kr = ml_forecast.kernel_ridge(n_features=50,
+                                          method=arguments.selector)
     else:
         res_kr = ml_forecast.kernel_ridge(
-            n_features=n_features, method='f-classif'
+            n_features=n_features, method=arguments.selector
         )
     res_kr = pd.concat([res_kr, y_test_no_prefilter],
                        axis=1)
@@ -129,7 +132,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
-        n_features=n_features, method='f-classif'
+        n_features=n_features, method=arguments.selector
     )
     res_dtr = pd.concat([res_dtr, y_test_no_prefilter],
                         axis=1)
