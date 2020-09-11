@@ -8,8 +8,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.experimental import enable_hist_gradient_boosting  # noqa
-from sklearn.ensemble import HistGradientBoostingRegressor
+# from sklearn.ensemble import HistGradientBoostingRegressor
+# from sklearn.decomposition import KernelPCA
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
@@ -19,6 +19,9 @@ from ..feature_selection import selector
 from ..model_selection._utility import adf_test
 import copy
 from sklearn.preprocessing import RobustScaler
+import warnings
+
+warnings.filterwarnings('ignore')
 
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
@@ -62,8 +65,8 @@ def rolling(func):
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
-            train_test, y_transformer\
-                = self._data_helper(i, n_features, method)
+            train_test, y_transformer = self._data_helper(i, n_features,
+                                                          method)
             train_test, diff_order = auto_diff(train_test)
 
             y_pred = func(self, train_test, n_features, method)
@@ -119,17 +122,27 @@ class MLForecast():
                                                     method='robust')
 
         X_train_scaled = X_transformer.transform(X_train)
+        y_train_scaled = y_train
         y_train_scaled = y_transformer.transform(y_train)
         X_test_scaled = X_transformer.transform(X_test)
+        y_test_scaled = y_test
         y_test_scaled = y_transformer.transform(y_test)
 
+        # if True:
+        #     kpca = KernelPCA(100)
+        #     kpca = kpca.fit(X_train_scaled)
+        #     X_train_scaled = kpca.transform(X_train_scaled)
+        #     X_test_scaled = kpca.transform(X_test_scaled)
+
         if n_features < np.inf:
-            X_train, X_test, y_train, y_test\
+            X_train_scaled, X_test_scaled, y_train_scaled, y_test_scaled\
                 = selector(X_train_scaled, X_test_scaled,
                            y_train_scaled, y_test_scaled,
                            n_features, method)
-        y_train, y_test = y_train.flatten(), y_test.flatten()
-        return (X_train, X_test, y_train, y_test), y_transformer
+        y_train_scaled, y_test_scaled\
+            = y_train_scaled.flatten(), y_test_scaled.flatten()
+        return (X_train_scaled, X_test_scaled,
+                y_train_scaled, y_test_scaled), y_transformer
 
     @rolling
     def linear_reg(self, train_test, n_features=np.inf, method=None):
@@ -184,23 +197,6 @@ class MLForecast():
         )
         dtr_gridsearch.fit(X_train, y_train)
         y_pred = dtr_gridsearch.predict(X_test)
-        return y_pred
-
-    @rolling
-    def hist_grad_boost_reg(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        hgbr_gridsearch = GridSearchCV(
-            HistGradientBoostingRegressor(),
-            verbose=self.verbose,
-            param_grid={
-                "learning_rate": [0.05, 0.1, 0.2, 0.3],
-                "min_samples_leaf": [5, 10, 20],
-                'max_depth': [2, 3, 5, 10]
-            },
-            scoring='r2', n_jobs=n_cpus
-        )
-        hgbr_gridsearch.fit(X_train, y_train)
-        y_pred = hgbr_gridsearch.predict(X_test)
         return y_pred
 
     @rolling

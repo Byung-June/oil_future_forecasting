@@ -3,6 +3,9 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import f_regression
 from sklearn.feature_selection import mutual_info_regression
+import warnings
+
+warnings.filterwarnings('ignore')
 
 
 def selector(
@@ -40,25 +43,31 @@ def selector(
 
 
 def _f_classif_square_selector(X_train, X_test, y_train, y_test, n_features):
+    if n_features > X_train.shape[0]:
+        n_features = X_train.shape[0]
     kbest = SelectKBest(f_classif, n_features)
-    kbest.fit(X_train, y_train)
-    X_train = X_train[:, kbest.get_support()]
-    X_test = X_test[:, kbest.get_support()]
+    kbest = kbest.fit(X_train, y_train)
+    X_train = kbest.transform(X_train)
+    X_test = kbest.transform(X_test)
     return X_train, X_test, y_train, y_test
 
 
 def _f_regression_selector(X_train, X_test, y_train, y_test, n_features):
+    if n_features > X_train.shape[0]:
+        n_features = X_train.shape[0]
     kbest = SelectKBest(f_regression, n_features)
     kbest.fit(X_train, y_train)
-    X_train = X_train[:, kbest.get_support()]
-    X_test = X_test[:, kbest.get_support()]
+    X_train = kbest.transform(X_train)
+    X_test = kbest.transform(X_test)
     return X_train, X_test, y_train, y_test
 
 
 def _mutual_info_regression_selector(X_train, X_test, y_train, y_test,
                                      n_features):
+    if n_features > X_train.shape[0]:
+        n_features = X_train.shape[0]
     kbest = SelectKBest(mutual_info_regression, n_features)
     kbest.fit(X_train, y_train)
-    X_train = X_train[:, kbest.get_support()]
-    X_test = X_test[:, kbest.get_support()]
+    X_train = kbest.transform(X_train)
+    X_test = kbest.transform(X_test)
     return X_train, X_test, y_train, y_test
