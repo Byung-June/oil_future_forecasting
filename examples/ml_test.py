@@ -5,8 +5,9 @@ from oil_forecastor.ml_forecastor.forecast import MLForecast
 import pandas as pd
 import argparse
 import warnings
-from sklearn.metrics import r2_score
 from oil_forecastor.model_selection import denoising_func
+from r2_oos import evaluation
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -24,29 +25,12 @@ parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
 parser.add_argument('--prefilter', default=False, type=bool)
+parser.add_argument('--n-windows', default=5, type=int)
+parser.add_argument('--n-samples', default=15, type=int)
 arguments = parser.parse_args()
 
 if arguments.ignore_warnings:
     warnings.filterwarnings('ignore')
-
-
-def evaluation(df, delete_outlier=True):
-    df = df.dropna()
-    # y_test_no_prefilter = df['y_test'].values.flatten()
-    y_pred_before_recovered = df['y_pred_before_recovered'].values.flatten()
-    y_filtered_test = df['y_test_filtered'].values.flatten()
-
-    y_pred = df['y_pred'].values.flatten()
-    if delete_outlier:
-        mean = y_pred.mean()
-        std = y_pred.std()
-        y_pred = np.where(y_pred >= mean + 3 * std,
-                          mean + 3 * std, y_pred)
-        y_pred = np.where(y_pred <= mean - 3 * std,
-                          mean - 3 * std, y_pred)
-    y_true = df['y_true'].values.flatten()
-    return r2_score(y_true, y_pred),\
-        r2_score(y_filtered_test, y_pred_before_recovered)
 
 
 def make_name(name, sw_tuple, n_features, args):
@@ -92,7 +76,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_linear_reg = pd.concat([res_linear_reg, y_test_no_prefilter],
                                axis=1)
     r2_test, r2_filtered_test = evaluation(res_linear_reg)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_linear_reg", sw_tuple, n_features, arguments)
     res_linear_reg.to_csv(name_lin_reg + ".csv")
 
@@ -103,7 +87,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_lasso = pd.concat([res_lasso, y_test_no_prefilter],
                           axis=1)
     r2_test, r2_filtered_test = evaluation(res_lasso)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lasso_reg\
         = make_name("res_lasso_reg", sw_tuple, n_features, arguments)
     res_lasso.to_csv(name_lasso_reg + ".csv")
@@ -113,7 +97,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_pcr = pd.concat([res_pcr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_pcr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_pcr", sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
 
@@ -125,7 +109,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_svr = pd.concat([res_svr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_svr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_svr", sw_tuple, n_features, arguments)
     res_svr.to_csv(name_lin_reg + ".csv")
 
@@ -139,7 +123,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_kr = pd.concat([res_kr, y_test_no_prefilter],
                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_kr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_kr", sw_tuple, n_features, arguments)
     res_kr.to_csv(name_lin_reg + ".csv")
 
@@ -150,7 +134,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_dtr = pd.concat([res_dtr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_dtr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_dtr", sw_tuple, n_features, arguments)
     res_dtr.to_csv(name_lin_reg + ".csv")
 
@@ -159,7 +143,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_rfr = pd.concat([res_rfr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_rfr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_rfr", sw_tuple, n_features, arguments)
     res_rfr.to_csv(name_lin_reg + ".csv")
 
@@ -168,7 +152,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_gbr = pd.concat([res_gbr, y_test_no_prefilter],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_gbr)
-    print('r2 test {}, r2 filtered test {}'.format(r2_test, r2_filtered_test))
+    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
     name_lin_reg = make_name("res_gbr", sw_tuple, n_features, arguments)
     res_gbr.to_csv(name_lin_reg + ".csv")
 
@@ -177,7 +161,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     # res_hgbr = pd.concat([res_hgbr, y_test_no_prefilter],
     #                      axis=1)
     # r2_test, r2_filtered_test = evaluation(res_hgbr)
-    # print('r2 test {}, r2 filtered test {}'.format(r2_test,
+    # print('r2 test {}, r2 zero return {}'.format(r2_test,
     # r2_filtered_test))
     # name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
     # res_hgbr.to_csv(name_lin_reg + ".csv")
@@ -208,6 +192,7 @@ if __name__ == '__main__':
 
     for filter_method in ['moving_average', 'none']:
         for n_features in [np.inf, 10]:
-            for sw_tuple in [(45, 22), (15, 5)]:
+            for sw_tuple in [(arguments.n_samples, arguments.n_windows),
+                             (45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)
                 main(copied, filter_method, n_features, sw_tuple)

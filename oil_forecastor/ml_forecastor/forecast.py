@@ -55,7 +55,7 @@ def rolling(func):
         df = pd.DataFrame(np.nan,
                           index=self.data.index,
                           columns=['y_pred', 'y_test_filtered',
-                                   'y_pred_before_recovered', 'y_true'])
+                                   'y_pred_zero', 'y_true'])
         # add one day because the test date is one day
         # after the last date of thetraining dataset
         for i, time_idx in enumerate(tqdm(sample_date)):
@@ -66,9 +66,10 @@ def rolling(func):
 
             y_pred = func(self, train_test, n_features, method)
             y_pred_recov = recover(i, diff_order, y_pred, self.y_true)
+            y_pred_zero = recover(i, diff_order, 0.0, self.y_true)
 
             df['y_test_filtered'].iloc[i+1] = train_test[-1].flatten()
-            df['y_pred_before_recovered'].iloc[i+1] = y_pred.flatten()
+            df['y_pred_zero'].iloc[i+1] = y_pred_zero
             df['y_pred'].iloc[i+1] = y_pred_recov.flatten()
             df['y_true'].iloc[i] = self.y_true.iloc[i]
         return df
