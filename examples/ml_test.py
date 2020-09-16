@@ -48,20 +48,9 @@ def make_name(name, sw_tuple, n_features, args):
     return path
 
 
-def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
-    # exogenous = exogenous.drop('y_true', axis=1)
-    y_test_no_prefilter = copy.deepcopy(exogenous['y_test']).to_frame()
-    y_test_filtered = copy.deepcopy(exogenous['y_test_filtered']).to_frame()
-    exogenous = exogenous.drop('y_test', axis=1)
-    exogenous = exogenous.drop('y_test_filtered', axis=1)
-
-    if prefiltered:
-        prefiltered = pd.concat([exogenous, y_test_filtered], axis=1)
-    else:
-        prefiltered = pd.concat([exogenous, y_test_no_prefilter], axis=1)
-        prefiltered = prefiltered.rename(columns={'y_test': 'y_test_filtered'})
-
-    filtered = denoising_func(prefiltered, filter_method)
+def main(exogenous, filter_method, n_features, sw_tuple, y_true,
+         prefiltered=False):
+    filtered = denoising_func(exogenous, filter_method)
 
     n_samples, n_windows = sw_tuple
     start_time = n_windows + n_samples - 2
@@ -74,7 +63,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method=arguments.selector
     )
-    res_linear_reg = pd.concat([res_linear_reg, y_test_no_prefilter],
+    res_linear_reg = pd.concat([res_linear_reg, y_true],
                                axis=1)
     r2_test, r2_filtered_test = evaluation(res_linear_reg)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -85,7 +74,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method=arguments.selector
     )
-    res_lasso = pd.concat([res_lasso, y_test_no_prefilter],
+    res_lasso = pd.concat([res_lasso, y_true],
                           axis=1)
     r2_test, r2_filtered_test = evaluation(res_lasso)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -95,7 +84,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
-    res_pcr = pd.concat([res_pcr, y_test_no_prefilter],
+    res_pcr = pd.concat([res_pcr, y_true],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_pcr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -108,7 +97,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     else:
         res_svr = ml_forecast.svr(n_features=n_features,
                                   method=arguments.selector)
-    res_svr = pd.concat([res_svr, y_test_no_prefilter],
+    res_svr = pd.concat([res_svr, y_true],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_svr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -123,7 +112,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
         res_kr = ml_forecast.kernel_ridge(
             n_features=n_features, method=arguments.selector
         )
-    res_kr = pd.concat([res_kr, y_test_no_prefilter],
+    res_kr = pd.concat([res_kr, y_true],
                        axis=1)
     r2_test, r2_filtered_test = evaluation(res_kr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -134,7 +123,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method=arguments.selector
     )
-    res_dtr = pd.concat([res_dtr, y_test_no_prefilter],
+    res_dtr = pd.concat([res_dtr, y_true],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_dtr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -143,7 +132,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
-    res_rfr = pd.concat([res_rfr, y_test_no_prefilter],
+    res_rfr = pd.concat([res_rfr, y_true],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_rfr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -152,7 +141,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, prefiltered=False):
 
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
-    res_gbr = pd.concat([res_gbr, y_test_no_prefilter],
+    res_gbr = pd.concat([res_gbr, y_true],
                         axis=1)
     r2_test, r2_filtered_test = evaluation(res_gbr)
     print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
@@ -177,6 +166,8 @@ if __name__ == '__main__':
     exogenous = pd.read_csv(path)
     exogenous = exogenous.set_index('date')
     exogenous.index = pd.DatetimeIndex(exogenous.index)
+    y_true = pd.read_csv('../data/y_true.csv')
+    y_true = y_true.set_index('date')
 
     try:
         os.mkdir('../results/')
@@ -193,9 +184,9 @@ if __name__ == '__main__':
         if 'curde_future' in exogenous.columns:
             exogenous = exogenous.drop('crude_future', axis=1)
 
-    for filter_method in ['moving_average', 'none']:
+    for filter_method in ['none']:
         for n_features in [np.inf, 50, 10]:
             for sw_tuple in [(arguments.n_samples, arguments.n_windows),
                              (45, 22), (15, 5)]:
                 copied = copy.deepcopy(exogenous)
-                main(copied, filter_method, n_features, sw_tuple)
+                main(copied, filter_method, n_features, sw_tuple, y_true)

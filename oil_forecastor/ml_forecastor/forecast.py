@@ -46,7 +46,7 @@ def recover(i, diff_order, y_pred, y_test):
 def auto_diff(train_test):
     train_test = list(train_test)
     # diff_order = max(adf_test(train_test[2]))
-    diff_order = 1
+    diff_order = 0
     train_test[0] = train_test[0][diff_order:, ...]
     train_test[-2] = np.diff(train_test[-2], diff_order)
     return train_test, diff_order
@@ -59,8 +59,7 @@ def rolling(func):
         sample_date = pd.to_datetime(self.data.index[:self.end_time_idx])
         df = pd.DataFrame(np.nan,
                           index=self.data.index,
-                          columns=['y_pred', 'y_test_filtered',
-                                   'y_pred_zero', 'y_true'])
+                          columns=['y_pred', 'y_test'])
         # add one day because the test date is one day
         # after the last date of thetraining dataset
         for i, time_idx in enumerate(tqdm(sample_date)):
@@ -75,12 +74,9 @@ def rolling(func):
             y_pred = y_transformer.inverse_transform(y_pred)
             y_pred = y_pred.flatten()
             y_pred_recov = recover(i, diff_order, y_pred, self.y_test)
-            y_pred_zero = recover(i, diff_order, 0.0, self.y_test)
 
-            df['y_test_filtered'].iloc[i+1] = train_test[-1].flatten()
-            df['y_pred_zero'].iloc[i+1] = y_pred_zero
+            df['y_test'].iloc[i+1] = train_test[-1].flatten()
             df['y_pred'].iloc[i+1] = y_pred_recov.flatten()
-            df['y_true'].iloc[i] = self.y_true.iloc[i]
         return df
     return train_model_wrapper
 
@@ -88,9 +84,7 @@ def rolling(func):
 class MLForecast():
     def __init__(self, data, n_windows, n_samples, start_time, end_time):
         self.data = data
-        self.y_true = copy.deepcopy(self.data['y_true'])
-        self.y_test = copy.deepcopy(self.data['y_test_filtered'])
-        self.data = self.data.drop('y_true', axis=1)
+        self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
         self.start_time = pd.to_datetime(data.index[start_time])
         self.end_time_idx = end_time
@@ -124,10 +118,8 @@ class MLForecast():
                                                     method='robust')
 
         X_train_scaled = X_transformer.transform(X_train)
-        y_train_scaled = y_train
         y_train_scaled = y_transformer.transform(y_train)
         X_test_scaled = X_transformer.transform(X_test)
-        y_test_scaled = y_test
         y_test_scaled = y_transformer.transform(y_test)
 
         # if True:
