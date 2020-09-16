@@ -8,51 +8,99 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.experimental import enable_hist_gradient_boosting  # noqa
-from sklearn.ensemble import HistGradientBoostingRegressor
+# from sklearn.ensemble import HistGradientBoostingRegressor
+# from sklearn.decomposition import KernelPCA
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.kernel_ridge import KernelRidge
 from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
+# from ..model_selection._utility import adf_test
+import copy
+from sklearn.preprocessing import RobustScaler
+import warnings
+
+warnings.filterwarnings('ignore')
 
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
+def recover(i, diff_order, y_pred, y_test):
+    y_t = y_test.iloc[i]
+    y_t_before = y_test.iloc[i - 1]
+    y_t_2 = y_test.iloc[i - 2]
+    if diff_order == 0:
+        y_pred_recovered = y_pred
+    elif diff_order == 1:
+        y_pred_recovered = y_pred + y_t
+    elif diff_order == 2:
+        y_pred_recovered = y_pred + 2 * y_t - y_t_before
+    elif diff_order == 3:
+        y_pred_recovered = y_pred - 3 * y_t + 3 * y_t_before - y_t_2
+    else:
+        raise ValueError("Too high diff order")
+    return y_pred_recovered
+
+
+def auto_diff(train_test):
+    train_test = list(train_test)
+    # diff_order = max(adf_test(train_test[2]))
+    diff_order = 0
+    train_test[0] = train_test[0][diff_order:, ...]
+    train_test[-2] = np.diff(train_test[-2], diff_order)
+    return train_test, diff_order
+
+
 def rolling(func):
     @wraps(func)
-    def train_model_wrapper(
-        self,
-        n_features=np.inf, method=None, *args, **kwargs
-    ):
-        y_pred_list = []
-        sample_date = pd.to_datetime(
-            self.data.index[:self.end_time_idx]
-        )
+    def train_model_wrapper(self,
+                            n_features=np.inf, method=None, *args, **kwargs):
+        sample_date = pd.to_datetime(self.data.index[:self.end_time_idx])
+        df = pd.DataFrame(np.nan,
+                          index=self.data.index,
+                          columns=['y_pred', 'y_test'])
+        # add one day because the test date is one day
+        # after the last date of thetraining dataset
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
+            train_test, y_transformer = self._data_helper(i, n_features,
+                                                          method)
+            train_test, diff_order = auto_diff(train_test)
 
-            train_test = self._data_helper(i, n_features, method)
             y_pred = func(self, train_test, n_features, method)
-            y_pred_list.append(y_pred)
-        y_pred_list = np.array(y_pred_list).reshape(-1, 1)
-        return y_pred_list
+            y_pred = y_pred.reshape(1, 1)
+            y_pred = y_transformer.inverse_transform(y_pred)
+            y_pred = y_pred.flatten()
+            y_pred_recov = recover(i, diff_order, y_pred, self.y_test)
+
+            df['y_test'].iloc[i+1] = train_test[-1].flatten()
+            df['y_pred'].iloc[i+1] = y_pred_recov.flatten()
+        return df
     return train_model_wrapper
 
 
 class MLForecast():
     def __init__(self, data, n_windows, n_samples, start_time, end_time):
         self.data = data
+        self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
         self.start_time = pd.to_datetime(data.index[start_time])
         self.end_time_idx = end_time
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
 
-    def _data_helper(self, time_idx, n_features, method):
+    def _scaler(self, X_train, y_train,
+                method='robust'):
+        if len(y_train.shape) < 2:
+            y_train = y_train.reshape(y_train.shape[0], 1)
+        if method == 'robust':
+            X_transformer = RobustScaler().fit(X_train)
+            y_transformer = RobustScaler().fit(y_train)
+        return X_transformer, y_transformer
 
+    def _data_helper(self, time_idx, n_features, method):
         data_tuple = rolling_train_test_split(
                 self.data, self.n_windows, self.n_samples, time_idx
             )
@@ -60,16 +108,35 @@ class MLForecast():
             [elt.values for elt in data_tuple[0]], axis=-1
         )
         X_test = np.expand_dims(data_tuple[1].values, axis=-1)
-        X_train = X_train.reshape(X_train.shape[-1], -1)
+        X_train = X_train.reshape(-1, X_train.shape[-1])
+        X_train = np.transpose(X_train)
         X_test = X_test.reshape(X_test.shape[-1], -1)
-        y_train = np.array(data_tuple[2])
-        y_test = np.array(data_tuple[3])
+        y_train = np.array(data_tuple[2]).reshape(-1, 1)
+        y_test = np.array(data_tuple[3]).reshape(1, 1)
+
+        X_transformer, y_transformer = self._scaler(X_train, y_train,
+                                                    method='robust')
+
+        X_train_scaled = X_transformer.transform(X_train)
+        y_train_scaled = y_transformer.transform(y_train)
+        X_test_scaled = X_transformer.transform(X_test)
+        y_test_scaled = y_transformer.transform(y_test)
+
+        # if True:
+        #     kpca = KernelPCA(100)
+        #     kpca = kpca.fit(X_train_scaled)
+        #     X_train_scaled = kpca.transform(X_train_scaled)
+        #     X_test_scaled = kpca.transform(X_test_scaled)
 
         if n_features < np.inf:
-            X_train, X_test, y_train, y_test = selector(
-                X_train, X_test, y_train, y_test, n_features, method
-            )
-        return X_train, X_test, y_train, y_test
+            X_train_scaled, X_test_scaled, y_train_scaled, y_test_scaled\
+                = selector(X_train_scaled, X_test_scaled,
+                           y_train_scaled, y_test_scaled,
+                           n_features, method)
+        y_train_scaled, y_test_scaled\
+            = y_train_scaled.flatten(), y_test_scaled.flatten()
+        return (X_train_scaled, X_test_scaled,
+                y_train_scaled, y_test_scaled), y_transformer
 
     @rolling
     def linear_reg(self, train_test, n_features=np.inf, method=None):
@@ -84,7 +151,7 @@ class MLForecast():
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
             Lasso(max_iter=3000, tol=5e-2, selection='random'),
-            verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 60)},
+            verbose=self.verbose, param_grid={"alpha": np.logspace(-3, 2, 15)},
             scoring='r2', n_jobs=n_cpus
         )
         lasso_gridsearch.fit(X_train, y_train)
@@ -97,7 +164,11 @@ class MLForecast():
         dtr_gridsearch = GridSearchCV(
             DecisionTreeRegressor(),
             verbose=self.verbose,
-            param_grid={"max_depth": [i + 1 for i in range(20)]},
+            param_grid={
+                "max_depth": [2, 3, 5, 10, 15, 20],
+                "min_samples_split": [0.1, 0.3],
+                "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
+            },
             scoring='r2', n_jobs=n_cpus
         )
         dtr_gridsearch.fit(X_train, y_train)
@@ -111,8 +182,10 @@ class MLForecast():
             GradientBoostingRegressor(),
             verbose=self.verbose,
             param_grid={
-                'max_depth': [2, 3, 5, 10],
-                'n_estimators': [20, 50, 100]
+                "learning_rate": [0.05, 0.1, 0.2, 0.3],
+                "min_samples_split": [0.1, 0.3],
+                'n_estimators': [20, 50, 100],
+                'max_depth': [2, 3, 5, 10]
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -121,24 +194,10 @@ class MLForecast():
         return y_pred
 
     @rolling
-    def hist_grad_boost_reg(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        hgbr_gridsearch = GridSearchCV(
-            HistGradientBoostingRegressor(),
-            verbose=self.verbose,
-            param_grid={
-                'max_depth': [2, 3, 5, 10]
-            },
-            scoring='r2', n_jobs=n_cpus
-        )
-        hgbr_gridsearch.fit(X_train, y_train)
-        y_pred = hgbr_gridsearch.predict(X_test)
-        return y_pred
-
-    @rolling
     def pcr(self, train_test, n_features=np.inf, method=None):
         # https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_vs_fa_model_selection.html#sphx-glr-auto-examples-decomposition-plot-pca-vs-fa-model-selection-py
-        n_components = np.arange(1, 20)
+        max_components = min(n_features, 30)
+        n_components = np.arange(1, max_components)
         X_train, X_test, y_train, y_test = train_test
         linear_regressor = LinearRegression()
         pcr_scores = []
@@ -168,8 +227,10 @@ class MLForecast():
         rfr_gridsearch = GridSearchCV(
             RandomForestRegressor(),
             verbose=self.verbose, param_grid={
-                "max_depth": [2, 3, 5, 10],
-                "min_samples_leaf": [2, 3, 5]
+                'n_estimators': [20, 50, 100],
+                "max_depth": [2, 5, 10],
+                "min_samples_split": [0.1, 0.3],
+                "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -184,8 +245,8 @@ class MLForecast():
             SVR(kernel='rbf', gamma=0.1, cache_size=10000),
             verbose=self.verbose,
             param_grid={
-                'C': [1, 2, 3, 4, 5],
-                'gamma': np.logspace(-2, 1, 5)
+                'C': [0.1, 1, 3, 5],
+                'gamma': np.logspace(-3, 1, 8)
             },
             scoring='r2', n_jobs=n_cpus
         )
@@ -200,7 +261,7 @@ class MLForecast():
             KernelRidge(kernel='rbf', gamma=0.1),
             verbose=self.verbose,
             param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
-                        "gamma": np.logspace(-2, 3, 6)},
+                        "gamma": np.logspace(-3, 1, 8)},
             scoring='r2', n_jobs=n_cpus
         )
         kr_gridsearch.fit(X_train, y_train)
