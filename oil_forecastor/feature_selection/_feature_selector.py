@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 def selector(
     X_train, X_test, y_train, y_test, n_features,
-    method='f-classif'
+    method='f-regression'
 ):
     """[summary]
 

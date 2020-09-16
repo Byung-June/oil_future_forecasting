@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pmdarima as pm
 from ..model_selection._utility import adf_test, get_features, flatten_x_train, flatten_x_test
-from ..feature_selection._feature_selector import _f_classif_square_selector
+from ..feature_selection._feature_selector import selector
 from arch.univariate import arch_model
 import datetime as dt
 
@@ -17,7 +17,7 @@ def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
         # x_test = flatten_x_test(x_test).iloc[:, x_train_pos]
         x_train = flatten_x_train(x_train)
         x_test = flatten_x_test(x_test)
-        x_train, x_test, y_train, y_test = _f_classif_square_selector(
+        x_train, x_test, y_train, y_test = selector(
             np.array(x_train),
             np.array(x_test),
             y_train,

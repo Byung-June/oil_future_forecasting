@@ -96,61 +96,61 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     # arima test
-    input_w = 5
-    input_s = 15
+    input_w = 2
+    input_s = 5
     input_f = 0
     g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                  denoise='moving_average')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
 
     # arima test
-    input_w = 5
-    input_s = 15
-    input_f = 10
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                 denoise='moving_average')
-    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    print('result', arma)
-
-    # arima test
-    input_w = 22
-    input_s = 45
-    input_f = 0
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                 denoise='moving_average')
-    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    print('result', arma)
-
-    # arima test
-    input_w = 22
-    input_s = 45
-    input_f = 10
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                 denoise='moving_average')
-    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    print('result', arma)
-
-    # arima test
-    input_w = 60
-    input_s = 300
-    input_f = 0
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                 denoise='moving_average')
-    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    print('result', arma)
-
-    # arima test
-    input_w = 60
-    input_s = 300
-    input_f = 10
-    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                 denoise='moving_average')
-    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    print('result', arma)
+    # input_w = 5
+    # input_s = 15
+    # input_f = 10
+    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+    #              denoise='moving_average')
+    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    # arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    # print('result', arma)
+    #
+    # # arima test
+    # input_w = 22
+    # input_s = 45
+    # input_f = 0
+    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+    #              denoise='moving_average')
+    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    # arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    # print('result', arma)
+    #
+    # # arima test
+    # input_w = 22
+    # input_s = 45
+    # input_f = 10
+    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+    #              denoise='moving_average')
+    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    # arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    # print('result', arma)
+    #
+    # # arima test
+    # input_w = 60
+    # input_s = 300
+    # input_f = 0
+    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+    #              denoise='moving_average')
+    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    # arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    # print('result', arma)
+    #
+    # # arima test
+    # input_w = 60
+    # input_s = 300
+    # input_f = 10
+    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+    #              denoise='moving_average')
+    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    # arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    # print('result', arma)
