@@ -42,15 +42,14 @@ def evaluation(df, delete_outlier=False):
 
     y_pred = df['y_pred'].values.flatten()
     y_test = df['y_test'].values.flatten()
+
     if delete_outlier:
-        mean = y_pred.mean()
-        std = y_pred.std()
-        y_pred = np.where(y_pred >= mean + 3 * std,
-                          mean + 3 * std, y_pred)
-        y_pred = np.where(y_pred <= mean - 3 * std,
-                          mean - 3 * std, y_pred)
-    y_true = df['y_true'].values.flatten()
-    return r2_score(y_test, y_pred), r2_score(y_true, y_pred)
+        y_err = np.abs(y_pred - y_test)
+        y_max_err = np.percentile(y_err, 99.9)
+
+        y_pred = y_pred[y_err < y_max_err]
+        y_test = y_test[y_err < y_max_err]
+    return r2_score(y_test, y_pred), 0.0
 
 
 if __name__ == '__main__':
