@@ -167,7 +167,8 @@ if __name__ == '__main__':
         exogenous = exogenous.drop(columns=exo_dropcolumn)
 
         try:
-            os.mkdir('../results/' + os.path.basename(path))
+            os.mkdir('../results/'
+                     + os.path.basename(path).replace('.csv', ''))
         except Exception as e:
             print(e)
 
@@ -187,4 +188,4 @@ if __name__ == '__main__':
                                  (15, 5)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
-                         os.path.basename(path))
+                         os.path.basename(path).replace('.csv', ''))
