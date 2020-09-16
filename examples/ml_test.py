@@ -167,8 +167,8 @@ if __name__ == '__main__':
         exogenous = exogenous.drop(columns=exo_dropcolumn)
 
         try:
-            os.mkdir('../results/'
-                     + os.path.basename(path).replace('.csv', ''))
+            os.makedirs('../results/'
+                        + os.path.basename(path).replace('.csv', ''))
         except Exception as e:
             print(e)
 
