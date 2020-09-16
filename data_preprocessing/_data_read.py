@@ -56,7 +56,7 @@ def resample_df(df_, freq='W'):
     return df_2
 
 
-def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01', scaler=False):
+def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01', scaler=False, filter=None):
     url_list_daily = [
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_FUT_S1_D.xls',
@@ -125,13 +125,15 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     b_index = df_d.index
 
     df_y = df_d.iloc[:, [0]].shift(-1)
-    df_y['y_test'] = df_y['y_test'].pct_change()
-
+    # df_y['y_test'] = df_y['y_test'].pct_change()
+    print(111, df_y)
+    df_y = denoising_func(df_y, filter=filter)#.pct_change()
     df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
     df_y['crude_future_daily_lag1'] = df_y['y_test'].shift(2)
     df_y['crude_future_daily_lag2'] = df_y['y_test'].shift(3)
     df_y['crude_future_daily_lag3'] = df_y['y_test'].shift(4)
     df_y['crude_future_daily_lag4'] = df_y['y_test'].shift(5)
+    print(222, df_y)
 
     col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
     df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 1:], col_stationary_index, col_stationary_diff),
@@ -200,5 +202,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 
 
 if __name__ == '__main__':
-    gen_data(filename='ml_data_W.csv', freq='W')
+    # gen_data(filename='ml_data_W.csv', freq='W')
     # gen_data(filename='ml_data_D.csv', freq='D')
+    # gen_data(filename='return_ma_ml_data_D.csv', freq='D', filter='moving_average')
+    # gen_data(filename='return_bi_ml_data_D.csv', freq='D', filter='bilateral')
+    gen_data(filename='price_bi_ml_data_D.csv', freq='D', filter='bilateral')

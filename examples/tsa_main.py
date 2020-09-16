@@ -24,10 +24,11 @@ class GenModel:
              'moving_average'
         """
         self._data = copy.copy(data_)
+        self._y_true = self._data[['y_test']]
         # self._data = denoising_func(self._data, filter=denoise).dropna()
-        self._data['y_test'] = self._data['y_test_filtered'].values
-        if denoise!= None:
-            self._data = self._data.drop(['y_test_filtered'], axis=1)
+        # self._data['y_test'] = self._data['y_test_filtered'].values
+        # if denoise!= None:
+        #     self._data = self._data.drop(['y_test_filtered'], axis=1)
 
         self._window_num = window_num
         self._sample_num = sample_num
@@ -82,54 +83,18 @@ class GenModel:
 
 # %%
 if __name__ == '__main__':
-    data = pd.read_csv('../data_preprocessing/ma_log_diff_no_scaler_ml_data.csv', index_col=0)
-    # data = data.drop(['crude_future_daily_lag0', 'crude_future_daily_lag1', 'crude_future_daily_lag2',
-    #                   'crude_future_daily_lag3', 'crude_future_daily_lag4'], axis=1)
+    data = pd.read_csv('../data_preprocessing/ma_return_no_scaler_ml_data.csv', index_col=0)
     data = data.drop(['crude_future_daily_lag0', 'crude_future_daily_lag1', 'crude_future_daily_lag2',
-                      'crude_future_daily_lag3', 'crude_future_daily_lag4',
-                      'y_test_filtered_lag0', 'y_test_filtered_lag1', 'y_test_filtered_lag2', 'y_test_filtered_lag3',
-                      'y_test_filtered_lag4'
-                      ], axis=1)
+                      'crude_future_daily_lag3', 'crude_future_daily_lag4'], axis=1)
+    # data = data.drop(['crude_future_daily_lag0', 'crude_future_daily_lag1', 'crude_future_daily_lag2',
+    #                   'crude_future_daily_lag3', 'crude_future_daily_lag4',
+    #                   'y_test_filtered_lag0', 'y_test_filtered_lag1', 'y_test_filtered_lag2', 'y_test_filtered_lag3',
+    #                   'y_test_filtered_lag4'
+    #                   ], axis=1)
     print(data)
     import warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    # # arima test
-    # input_w = 5
-    # input_s = 15
-    # input_f = 0
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('ma_diff_no_scaler_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 5
-    # input_s = 15
-    # input_f = 10
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('ma_diff_no_scaler_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 22
-    # input_s = 45
-    # input_f = 0
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('ma_diff_no_scaler_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 22
-    # input_s = 45
-    # input_f = 10
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f)
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('ma_diff_no_scaler_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-
     # arima test
     input_w = 5
     input_s = 15
@@ -137,7 +102,7 @@ if __name__ == '__main__':
     g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                  denoise='moving_average')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('ma_log_diff_no_scaler_ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
 
     # arima test
@@ -147,7 +112,7 @@ if __name__ == '__main__':
     g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                  denoise='moving_average')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('ma_log_diff_no_scaler_ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
 
     # arima test
@@ -157,7 +122,7 @@ if __name__ == '__main__':
     g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                  denoise='moving_average')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('ma_log_diff_no_scaler_ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
 
     # arima test
@@ -167,45 +132,25 @@ if __name__ == '__main__':
     g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                  denoise='moving_average')
     arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    arma.to_csv('ma_log_diff_no_scaler_ma5_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
     print('result', arma)
 
-    # # arima test
-    # input_w = 5
-    # input_s = 15
-    # input_f = 0
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-    #              denoise='wavelet_db1')
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 5
-    # input_s = 15
-    # input_f = 10
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-    #              denoise='wavelet_db1')
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 22
-    # input_s = 45
-    # input_f = 0
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-    #              denoise='wavelet_db1')
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
-    #
-    # # arima test
-    # input_w = 22
-    # input_s = 45
-    # input_f = 10
-    # g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-    #              denoise='wavelet_db1')
-    # arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-    # arma.to_csv('db1_arima_%s_%s_%s.csv' % (input_w, input_s, input_f))
-    # print('result', arma)
+    # arima test
+    input_w = 60
+    input_s = 300
+    input_f = 0
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='moving_average')
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)
+
+    # arima test
+    input_w = 60
+    input_s = 300
+    input_f = 10
+    g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
+                 denoise='moving_average')
+    arma = pd.DataFrame(g.gen_model('arima', process_num=4))
+    arma.to_csv('1ma_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+    print('result', arma)

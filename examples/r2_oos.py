@@ -58,3 +58,4 @@ if __name__ == "__main__":
         df = pd.read_csv(data)
         print(data, r2_oos_func(data))
     # r2_oos_ml(path=path, file=file)
+

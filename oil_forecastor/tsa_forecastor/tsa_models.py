@@ -8,7 +8,8 @@ import datetime as dt
 
 
 def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
-    d_ = max(adf_test(y_train))
+    # d_ = max(adf_test(y_train))
+    d_ = 0
     x_train_pos = []
     if feature_num > 0:
         # _, x_train_pos = get_features(flatten_x_train(x_train), y_train, n_features=feature_num)
