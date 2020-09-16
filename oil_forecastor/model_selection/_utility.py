@@ -132,7 +132,8 @@ def denoising_func(data_, filter):
                 multichannel=False)
 
     elif filter == 'moving_average':
-        data_['y_test'] = data_.y_test.rolling(window=5).mean()
+        data_['y_test']\
+            = data_.y_test.rolling(window=5).mean()
     elif filter is None or filter.lower() == 'none':
         pass
     else:
