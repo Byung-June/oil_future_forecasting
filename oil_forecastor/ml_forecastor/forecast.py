@@ -27,9 +27,9 @@ n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
 def recover(i, diff_order, y_pred, y_test):
-    y_t = y_test.iloc[i]
-    y_t_before = y_test.iloc[i - 1]
-    y_t_2 = y_test.iloc[i - 2]
+    y_t = y_test[-1]
+    y_t_before = y_test[-2]
+    y_t_2 = y_test[-3]
     if diff_order == 0:
         y_pred_recovered = y_pred
     elif diff_order == 1:
@@ -68,21 +68,33 @@ def rolling(func):
             train_test, y_transformer = self._data_helper(i, n_features,
                                                           method)
             train_test, diff_order = auto_diff(train_test)
+            y_train_scaled = train_test[-2]
+            y_test_scaled = train_test[-1].reshape(-1, 1)
 
-            y_pred = func(self, train_test, n_features, method)
-            y_pred = y_pred.reshape(1, 1)
-            y_pred = y_transformer.inverse_transform(y_pred)
-            y_pred = y_pred.flatten()
-            y_pred_recov = recover(i, diff_order, y_pred, self.y_test)
+            if y_transformer is not None:
+                y_test = y_transformer.inverse_transform(y_test_scaled)
+            else:
+                y_test = y_test_scaled
 
-            df['y_test'].iloc[i+1] = train_test[-1].flatten()
-            df['y_pred'].iloc[i+1] = y_pred_recov.flatten()
+            d_y_pred_scaled = func(self, train_test, n_features, method)
+            d_y_pred_scaled = d_y_pred_scaled.reshape(1, 1)
+            y_pred_recov_scaled = recover(i, diff_order, d_y_pred_scaled,
+                                          y_train_scaled)
+
+            if y_transformer is not None:
+                y_pred = y_transformer.inverse_transform(y_pred_recov_scaled)
+            else:
+                y_pred = y_pred_recov_scaled
+
+            df['y_test'].iloc[i+1] = y_test.flatten()
+            df['y_pred'].iloc[i+1] = y_pred.flatten()
         return df
     return train_model_wrapper
 
 
 class MLForecast():
-    def __init__(self, data, n_windows, n_samples, start_time, end_time):
+    def __init__(self, data, n_windows, n_samples,
+                 start_time, end_time, scaler):
         self.data = data
         self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
@@ -90,6 +102,7 @@ class MLForecast():
         self.end_time_idx = end_time
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
+        self.scaler = scaler
 
     def _scaler(self, X_train, y_train,
                 method='robust'):
@@ -98,6 +111,8 @@ class MLForecast():
         if method == 'robust':
             X_transformer = RobustScaler().fit(X_train)
             y_transformer = RobustScaler().fit(y_train)
+        elif method == 'none':
+            X_transformer, y_transformer = None, None
         return X_transformer, y_transformer
 
     def _data_helper(self, time_idx, n_features, method):
@@ -115,12 +130,20 @@ class MLForecast():
         y_test = np.array(data_tuple[3]).reshape(1, 1)
 
         X_transformer, y_transformer = self._scaler(X_train, y_train,
-                                                    method='robust')
+                                                    method=self.scaler)
 
-        X_train_scaled = X_transformer.transform(X_train)
-        y_train_scaled = y_transformer.transform(y_train)
-        X_test_scaled = X_transformer.transform(X_test)
-        y_test_scaled = y_transformer.transform(y_test)
+        if X_transformer is not None:
+            X_train_scaled = X_transformer.transform(X_train)
+            X_test_scaled = X_transformer.transform(X_test)
+        else:
+            X_train_scaled = X_train
+            X_test_scaled = X_test
+        if y_transformer is not None:
+            y_train_scaled = y_transformer.transform(y_train)
+            y_test_scaled = y_transformer.transform(y_test)
+        else:
+            y_train_scaled = y_train
+            y_test_scaled = y_test
 
         # if True:
         #     kpca = KernelPCA(100)

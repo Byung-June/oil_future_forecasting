@@ -25,9 +25,10 @@ parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
 parser.add_argument('--prefilter', default=False, type=bool)
-parser.add_argument('--n-windows', default=45, type=int)
-parser.add_argument('--n-samples', default=255, type=int)
+parser.add_argument('--n-windows', default=22, type=int)
+parser.add_argument('--n-samples', default=45, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
+parser.add_argument('--scaler', default='none', type=str)
 arguments = parser.parse_args()
 
 if arguments.ignore_warnings:
@@ -57,7 +58,7 @@ def main(exogenous, filter_method, n_features, sw_tuple, y_true,
     end_time = len(filtered) - 1
 
     ml_forecast = MLForecast(
-        filtered, n_windows, n_samples, start_time, end_time)
+        filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
 
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
@@ -169,6 +170,12 @@ if __name__ == '__main__':
     y_true = pd.read_csv('../data/y_true.csv')
     y_true = y_true.set_index('date')
 
+    exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
+    true_dropcolumn = [elt for elt in y_true.columns if 'Unnamed' in elt]
+
+    exogenous = exogenous.drop(columns=exo_dropcolumn)
+    y_true = y_true.drop(columns=true_dropcolumn)
+
     try:
         os.mkdir('../results/')
     except Exception as e:
@@ -187,6 +194,6 @@ if __name__ == '__main__':
     for filter_method in ['none']:
         for n_features in [np.inf, 50, 10]:
             for sw_tuple in [(arguments.n_samples, arguments.n_windows),
-                             (45, 22), (15, 5)]:
+                             (15, 5)]:
                 copied = copy.deepcopy(exogenous)
                 main(copied, filter_method, n_features, sw_tuple, y_true)
