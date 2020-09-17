@@ -8,6 +8,7 @@ import warnings
 from oil_forecastor.model_selection import denoising_func
 from r2_oos import evaluation
 import glob
+import sys
 
 
 parser = argparse.ArgumentParser()
@@ -30,7 +31,22 @@ parser.add_argument('--n-windows', default=22, type=int)
 parser.add_argument('--n-samples', default=45, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
+parser.add_argument('--true-path', default='../data/return_ml_data_D.csv',
+                    type=str,
+                    help='path to the data which is unfiltered')
 arguments = parser.parse_args()
+
+if arguments.scaler != 'none':
+    print("The model uses scaler and performance could drop. Are you sure?")
+    get_str = input().lower()
+    if get_str in ['yes', 'y']:
+        print("Using {} scaler".format(arguments.scaler))
+    else:
+        print("Terminate")
+        sys.exit()
+else:
+    print("Proceed without scaler")
+
 
 if arguments.ignore_warnings:
     warnings.filterwarnings('ignore')
@@ -43,6 +59,7 @@ def make_name(name, csv_name, sw_tuple, n_features, args):
     path = "../results/" + csv_name + '/'\
         + name + "_windows_" + str(n_windows)
     path += "_samples_" + str(n_samples)
+    path += "_scaler_" + args.scaler
     if n_features > 100:
         path += "_whole"
     else:
@@ -52,7 +69,7 @@ def make_name(name, csv_name, sw_tuple, n_features, args):
 
 
 def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
-         prefiltered=False):
+         y_true=None):
     filtered = denoising_func(exogenous, filter_method)
 
     n_samples, n_windows = sw_tuple
@@ -66,8 +83,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method=arguments.selector
     )
-    r2_test, r2_filtered_test = evaluation(res_linear_reg)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_linear_reg, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_linear_reg", csv_name,
                              sw_tuple, n_features, arguments)
     res_linear_reg.to_csv(name_lin_reg + ".csv")
@@ -76,16 +93,16 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     res_lasso = ml_forecast.lasso(
         n_features=n_features, method=arguments.selector
     )
-    r2_test, r2_filtered_test = evaluation(res_lasso)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_lasso, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lasso_reg\
         = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
     res_lasso.to_csv(name_lasso_reg + ".csv")
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
-    r2_test, r2_filtered_test = evaluation(res_pcr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_pcr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_pcr", csv_name,
                              sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
@@ -96,8 +113,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     else:
         res_svr = ml_forecast.svr(n_features=n_features,
                                   method=arguments.selector)
-    r2_test, r2_filtered_test = evaluation(res_svr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_svr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_svr", csv_name,
                              sw_tuple, n_features, arguments)
     res_svr.to_csv(name_lin_reg + ".csv")
@@ -110,8 +127,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
         res_kr = ml_forecast.kernel_ridge(
             n_features=n_features, method=arguments.selector
         )
-    r2_test, r2_filtered_test = evaluation(res_kr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_kr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_kr", csv_name,
                              sw_tuple, n_features, arguments)
     res_kr.to_csv(name_lin_reg + ".csv")
@@ -120,24 +137,24 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     res_dtr = ml_forecast.decision_tree_reg(
         n_features=n_features, method=arguments.selector
     )
-    r2_test, r2_filtered_test = evaluation(res_dtr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_dtr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_dtr", csv_name,
                              sw_tuple, n_features, arguments)
     res_dtr.to_csv(name_lin_reg + ".csv")
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg()
-    r2_test, r2_filtered_test = evaluation(res_rfr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_rfr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_rfr", csv_name,
                              sw_tuple, n_features, arguments)
     res_rfr.to_csv(name_lin_reg + ".csv")
 
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg()
-    r2_test, r2_filtered_test = evaluation(res_gbr)
-    print('r2 test {}, r2 zero return {}'.format(r2_test, r2_filtered_test))
+    r2_test, r2_true = evaluation(res_gbr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_gbr", csv_name,
                              sw_tuple, n_features, arguments)
     res_gbr.to_csv(name_lin_reg + ".csv")
@@ -146,9 +163,9 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     # res_hgbr = ml_forecast.hist_grad_boost_reg()
     # res_hgbr = pd.concat([res_hgbr, y_test_no_prefilter],
     #                      axis=1)
-    # r2_test, r2_filtered_test = evaluation(res_hgbr)
-    # print('r2 test {}, r2 zero return {}'.format(r2_test,
-    # r2_filtered_test))
+    # r2_test, r2_true = evaluation(res_hgbr)
+    # print('r2 test {}, r2 true {}'.format(r2_test,
+    # r2_true))
     # name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
     # res_hgbr.to_csv(name_lin_reg + ".csv")
 
@@ -157,6 +174,13 @@ if __name__ == '__main__':
     path = arguments.data_path
     if arguments.without_epu:
         path.replace('_with_epu', '-without_epu')
+
+    y_true = None
+    if arguments.true_path != 'none':
+        y_true = pd.read_csv(arguments.true_path)
+        y_true = y_true.set_index('date')
+        y_true = y_true['y_test']
+        y_true = y_true.rename('y_true')
 
     paths = glob.glob(arguments.data_path + '/*.csv')
     for path in paths:
@@ -188,4 +212,4 @@ if __name__ == '__main__':
                                  (15, 5)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
-                         os.path.basename(path).replace('.csv', ''))
+                         os.path.basename(path).replace('.csv', ''), y_true)

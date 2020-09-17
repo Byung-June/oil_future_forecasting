@@ -37,7 +37,9 @@ def r2_oos_ml(path='../results'):
     df_r2.to_csv('r_2.csv')
 
 
-def evaluation(df, delete_outlier=False):
+def evaluation(df, y_true, delete_outlier=False):
+    if y_true is not None:
+        df = pd.concat([df, y_true], axis=1)
     df = df.dropna()
 
     y_pred = df['y_pred'].values.flatten()
@@ -49,7 +51,13 @@ def evaluation(df, delete_outlier=False):
 
         y_pred = y_pred[y_err < y_max_err]
         y_test = y_test[y_err < y_max_err]
-    return r2_score(y_test, y_pred), 0.0
+
+    r2_true = 0.0
+    if y_true is not None:
+        y_true = df['y_true'].values.flatten()
+        r2_true = r2_score(y_true, y_pred)
+
+    return r2_score(y_test, y_pred), r2_true
 
 
 if __name__ == '__main__':
