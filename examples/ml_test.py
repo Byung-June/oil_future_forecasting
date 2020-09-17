@@ -20,7 +20,7 @@ parser.add_argument(
     '--without-epu', default=False, action='store_true'
 )
 parser.add_argument('--filter-method',
-                    default='moving_average', type=str)
+                    default='none', type=str)
 parser.add_argument('--ignore-warnings', default=True, action='store_false')
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
@@ -182,7 +182,7 @@ if __name__ == '__main__':
             if 'curde_future' in exogenous.columns:
                 exogenous = exogenous.drop('crude_future', axis=1)
 
-        for filter_method in ['none']:
+        for filter_method in [arguments.filter_method]:
             for n_features in [np.inf, 50, 10]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows),
                                  (15, 5)]:
