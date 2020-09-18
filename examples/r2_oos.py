@@ -8,6 +8,9 @@ from sklearn.metrics import r2_score
 def r2_oos_func(data_):
     data_ = pd.read_csv(data_, index_col=1)
     data_ = data_.drop(columns=['Unnamed: 0'])
+    data_['3'] = np.abs(data_['1'] - data_['2'])
+    # print('percentile', data, np.percentile(data_['3'], 99.9), np.percentile(data_['3'], 0.1))
+    # data_ = data_[data_['3'] < np.percentile(data_['3'], 99.9)]
     y_pred = data_.iloc[:, 0]
     y_test = data_.iloc[:, 1]
     r2_oos = r2_score(y_test, y_pred)
@@ -55,5 +58,10 @@ def evaluation(df, delete_outlier=True):
     return r2_score(y_true, y_pred), r2_score(y_true, y_pred_zero)
 
 
-if __name__ == '__main__':
-    r2_oos_ml()
+if __name__ == "__main__":
+    path = os.getcwd()
+    file = '\*.csv'
+    data_list = glob.glob(path + file)
+    for data in data_list:
+        print(data, r2_oos_func(data))
+    # r2_oos_ml(path=path, file=file)
