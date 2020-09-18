@@ -73,8 +73,8 @@ def rolling(func):
             d_y_pred = func(self, train_test, n_features, method)
             d_y_pred = d_y_pred.reshape(1, 1)
             y_pred = recover(i, diff_order, d_y_pred, y_train)
-            lb = y_train[-1] - 3 * np.std(y_train)
-            ub = y_train[-1] + 3 * np.std(y_train)
+            lb = y_train.mean() - 3 * np.std(y_train)
+            ub = y_train.mean() + 3 * np.std(y_train)
             y_pred = max(min(y_pred.flatten(), ub), lb)
 
             df['y_test'].iloc[i+1] = y_test.flatten()
