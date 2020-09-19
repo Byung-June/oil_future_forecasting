@@ -316,3 +316,25 @@ class MLForecast():
         kr.fit(X_train, y_train)
         y_pred = kr.predict(X_test)
         return y_pred
+
+    @rolling
+    def pipeline(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+
+        lb = y_train.mean() - 3 * np.std(y_train)
+        ub = y_train.mean() + 3 * np.std(y_train)
+
+        lin_reg = LinearRegression()
+        lin_reg.fit(X_train[:, :self.n_windows], y_train)
+        y_pred_train = lin_reg.predict(X_train[:, :self.n_windows])
+        y_pred_train = np.clip(y_pred_train, lb, ub)
+
+        residual = y_train - y_pred_train
+        residual = np.expand_dims(residual, axis=-1)
+        dtr = DecisionTreeRegressor()
+        dtr.fit(X_train, residual.flatten())
+
+        y_pred_lin_reg = lin_reg.predict(X_test[:, :self.n_windows])
+        y_pred_lin_reg = np.clip(y_pred_lin_reg, lb, ub)
+        residual_pred = dtr.predict(X_test)
+        return y_pred_lin_reg + residual_pred

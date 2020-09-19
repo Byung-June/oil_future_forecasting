@@ -79,6 +79,14 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
 
+    print("pipe")
+    res_pipe = ml_forecast.pipeline()
+    r2_test, r2_true = evaluation(res_pipe, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    name_lin_reg = make_name("res_pipe", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_pipe.to_csv(name_lin_reg + ".csv")
+
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method=arguments.selector
@@ -179,6 +187,7 @@ if __name__ == '__main__':
     if arguments.true_path != 'none':
         y_true = pd.read_csv(arguments.true_path)
         y_true = y_true.set_index('date')
+        y_true.index = pd.DatetimeIndex(y_true.index)
         y_true = y_true['y_test']
         y_true = y_true.rename('y_true')
 
@@ -186,17 +195,21 @@ if __name__ == '__main__':
     paths = [elt for elt in paths if 'return_ml_data_D' not in elt]
     for path in paths:
         exogenous = pd.read_csv(path)
+        exogenous = exogenous.set_index('date')
+        exogenous.index = pd.DatetimeIndex(exogenous.index)
+        exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
+        exogenous = exogenous.drop(columns=exo_dropcolumn)
+
+        if arguments.true_path != 'none':
+            assert len(exogenous) == len(y_true)
+            for i in range(len(exogenous)):
+                assert exogenous.index[i] == y_true.index[i]
 
         crude_future_columns = [elt for elt in exogenous.columns
                                 if 'crude_future' in elt]
         if len(crude_future_columns) > 1:
             raise Exception("data has same values"
                             "delete crude_future_lag_n, n > 0")
-
-        exogenous = exogenous.set_index('date')
-        exogenous.index = pd.DatetimeIndex(exogenous.index)
-        exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
-        exogenous = exogenous.drop(columns=exo_dropcolumn)
 
         try:
             os.makedirs('../results/'
@@ -215,7 +228,7 @@ if __name__ == '__main__':
                 exogenous = exogenous.drop('crude_future', axis=1)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [0, 10, 50, np.inf]:
+            for n_features in [0, np.inf]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
