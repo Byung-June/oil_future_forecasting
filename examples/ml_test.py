@@ -79,7 +79,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
         filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
 
     print("pipe")
-    res_pipe = ml_forecast.pipeline()
+    res_pipe = ml_forecast.pipeline(n_features=n_features,
+                                    method=arguments.selector)
     r2_test, r2_true = evaluation(res_pipe, y_true)
     print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
     name_lin_reg = make_name("res_pipe", csv_name,
@@ -208,11 +209,11 @@ if __name__ == '__main__':
         exogenous.index = pd.DatetimeIndex(exogenous.index)
         exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
         exogenous = exogenous.drop(columns=exo_dropcolumn)
-
-        if arguments.true_path != 'none':
-            assert len(exogenous) == len(y_true)
-            for i in range(len(exogenous)):
-                assert exogenous.index[i] == y_true.index[i]
+        dropcolumns = ['crude_future_daily_lag1', 'crude_future_daily_lag2',
+                       'crude_future_daily_lag3', 'crude_future_daily_lag4']
+        exogenous = exogenous.drop(columns=dropcolumns)
+        assert exogenous.columns[0] == 'y_test'
+        assert exogenous.columns[1] == 'crude_future_daily_lag0'
 
         crude_future_columns = [elt for elt in exogenous.columns
                                 if 'crude_future' in elt]
@@ -220,24 +221,19 @@ if __name__ == '__main__':
             raise Exception("data has same values"
                             "delete crude_future_lag_n, n > 0")
 
+        if arguments.true_path != 'none':
+            assert len(exogenous) == len(y_true)
+            for i in range(len(exogenous)):
+                assert exogenous.index[i] == y_true.index[i]
+
         try:
             os.makedirs('../results/'
                         + os.path.basename(path).replace('.csv', ''))
         except Exception as e:
             print(e)
 
-        if 'y_test' not in exogenous.columns:
-            if 'crude_future' in exogenous.columns:
-                exogenous = exogenous.rename(
-                    columns={'crude_future': 'y_test_filtered'})
-            else:
-                raise Exception("There must be a true data")
-        else:
-            if 'curde_future' in exogenous.columns:
-                exogenous = exogenous.drop('crude_future', axis=1)
-
         for filter_method in [arguments.filter_method]:
-            for n_features in [0, np.inf, 50, 10, 0]:
+            for n_features in [np.inf, 50, 10, 0]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
