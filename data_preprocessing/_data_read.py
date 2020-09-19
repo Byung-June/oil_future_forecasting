@@ -7,6 +7,9 @@ from _data_jodi import jodi_read
 from ml_data_preprocessing.make_data import make_data
 from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
 import copy
+from tsfilt import (
+    BoxFilter, GaussianFilter, BilateralFilter, IdenticalFilter, NonLocalMeanFilter
+)
 
 
 def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
@@ -56,7 +59,8 @@ def resample_df(df_, freq='W'):
     return df_2
 
 
-def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01', scaler=False, filter=None):
+def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
+             scaler=False, filter=None, y_type='return'):
     url_list_daily = [
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_FUT_S1_D.xls',
@@ -118,6 +122,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_d = pd.concat(df_d, axis=1, join='outer').loc[df_d[0].index]
     df_d = fill_bs_date(df_d.index, df_d)
     df_d = future_rolling(df_d, method='productive').dropna()
+    df_d = df_d[df_d['y_test'] > 0]
 
     # resampling frequency before making return
     if freq == 'W':
@@ -125,9 +130,26 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     b_index = df_d.index
 
     df_y = df_d.iloc[:, [0]].shift(-1)
-    # df_y['y_test'] = df_y['y_test'].pct_change()
     print(111, df_y)
-    df_y = denoising_func(df_y, filter=filter)#.pct_change()
+    if filter in [None, 'moving_average']:
+        df_y = denoising_func(df_y, filter=filter)
+        if y_type=='return':
+            df_y['y_test'] = df_y['y_test'].pct_change()
+        else:
+            df_y['y_test'] = df_y['y_test']
+
+    elif filter == 'bilateral':
+        print('std', np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        # filt = BilateralFilter(5, sigma_d=1.5, sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        filt = BilateralFilter(5, sigma_d=np.std(df_y['y_test'][~df_y['y_test'].isna()].values), sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        df_y['y_test'] = filt.fit_transform(df_y['y_test'].values)
+        if y_type=='return':
+            df_y['y_test'] = df_y['y_test'].pct_change()
+        else:
+            df_y['y_test'] = df_y['y_test']
+    else:
+        pass
+
     df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
     df_y['crude_future_daily_lag1'] = df_y['y_test'].shift(2)
     df_y['crude_future_daily_lag2'] = df_y['y_test'].shift(3)
@@ -202,8 +224,11 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 
 
 if __name__ == '__main__':
-    # gen_data(filename='ml_data_W.csv', freq='W')
-    # gen_data(filename='ml_data_D.csv', freq='D')
-    # gen_data(filename='return_ma_ml_data_D.csv', freq='D', filter='moving_average')
-    # gen_data(filename='return_bi_ml_data_D.csv', freq='D', filter='bilateral')
-    gen_data(filename='price_bi_ml_data_D.csv', freq='D', filter='bilateral')
+    # gen_data(filename='return_ml_data_D.csv', freq='D', filter=None, y_type='return')
+    # gen_data(filename='return_ma_ml_data_D.csv', freq='D', filter='moving_average', y_type='return')
+    gen_data(filename='2return_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='return')
+
+    # gen_data(filename='price_ml_data_D.csv', freq='D', filter=None, y_type='price')
+    # gen_data(filename='2price_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='price')
+    # gen_data(filename='price_wl_ml_data_D.csv', freq='D', filter='wavelet_db1', y_type='price')
+
