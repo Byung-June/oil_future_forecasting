@@ -107,6 +107,27 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
         = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
     res_lasso.to_csv(name_lasso_reg + ".csv")
 
+    print("ard")
+    res_els = ml_forecast.ard(
+        n_features=n_features, method=arguments.selector
+    )
+    r2_test, r2_true = evaluation(res_els, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+
+    print("bayes")
+    res_els = ml_forecast.bayes(
+        n_features=n_features, method=arguments.selector
+    )
+    r2_test, r2_true = evaluation(res_els, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+
+    print("huber")
+    res_els = ml_forecast.huber(
+        n_features=n_features, method=arguments.selector
+    )
+    r2_test, r2_true = evaluation(res_els, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+
     print("pcr")
     res_pcr = ml_forecast.pcr()
     r2_test, r2_true = evaluation(res_pcr, y_true)

@@ -5,7 +5,8 @@ from tqdm import tqdm
 import multiprocessing
 from sklearn.model_selection import cross_val_score
 # from sklearn.model_selection import GridSearchCV
-from sklearn.linear_model import Lasso, LinearRegression
+from sklearn.linear_model import Lasso, LinearRegression, \
+    BayesianRidge, HuberRegressor, ARDRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 # from sklearn.ensemble import HistGradientBoostingRegressor
@@ -338,3 +339,27 @@ class MLForecast():
         y_pred_lin_reg = np.clip(y_pred_lin_reg, lb, ub)
         residual_pred = dtr.predict(X_test)
         return y_pred_lin_reg + residual_pred
+
+    @rolling
+    def ard(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        els = ARDRegression()
+        els.fit(X_train, y_train)
+        y_pred = els.predict(X_test)
+        return y_pred
+
+    @rolling
+    def bayes(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        els = BayesianRidge()
+        els.fit(X_train, y_train)
+        y_pred = els.predict(X_test)
+        return y_pred
+
+    @rolling
+    def huber(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        els = HuberRegressor()
+        els.fit(X_train, y_train)
+        y_pred = els.predict(X_test)
+        return y_pred
