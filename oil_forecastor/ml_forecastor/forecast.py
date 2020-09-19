@@ -244,10 +244,14 @@ class MLForecast():
         pcr_scores = []
 
         pca = PCA()
-        X_train_reduced = pca.fit_transform(X_train)
+        X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
         for i in n_components:
             pcr_score = cross_val_score(
-                linear_regressor, X_train_reduced[:, :i], y_train,
+                linear_regressor,
+                np.concatenate([X_train[:, :self.n_windows],
+                                X_train_reduced[:, :i]],
+                               axis=-1),
+                y_train,
                 scoring='r2'
             ).mean()
             pcr_scores.append(pcr_score)
@@ -256,9 +260,15 @@ class MLForecast():
         linear_regressor_pcr = LinearRegression()
 
         linear_regressor_pcr.fit(
-            X_train_reduced[:, :n_components_pcr], y_train
-        )
-        X_test_reduced = pca.transform(X_test)[:, :n_components_pcr]
+            np.concatenate([X_train[:, :self.n_windows],
+                            X_train_reduced[:, :n_components_pcr]],
+                           axis=-1),
+            y_train)
+        X_test_reduced\
+            = pca.transform(X_test[:, self.n_windows:])[:, :n_components_pcr]
+        X_test_reduced = np.concatenate([X_test[:, :self.n_windows],
+                                         X_test_reduced],
+                                        axis=-1)
         y_pred = linear_regressor_pcr.predict(X_test_reduced)
         return y_pred
 
@@ -325,19 +335,27 @@ class MLForecast():
         lb = y_train.mean() - 3 * np.std(y_train)
         ub = y_train.mean() + 3 * np.std(y_train)
 
-        lin_reg = LinearRegression()
+        lin_reg = ARDRegression()
         lin_reg.fit(X_train[:, :self.n_windows], y_train)
         y_pred_train = lin_reg.predict(X_train[:, :self.n_windows])
         y_pred_train = np.clip(y_pred_train, lb, ub)
 
         residual = y_train - y_pred_train
         residual = np.expand_dims(residual, axis=-1)
-        dtr = DecisionTreeRegressor()
-        dtr.fit(X_train, residual.flatten())
+
+        X_train = np.concatenate([X_train[1:, :], residual[:-1, :]],
+                                 axis=-1)
+
+        rfr = RandomForestRegressor()
+        rfr.fit(X_train[:, self.n_windows:], residual[1:, :].flatten())
 
         y_pred_lin_reg = lin_reg.predict(X_test[:, :self.n_windows])
         y_pred_lin_reg = np.clip(y_pred_lin_reg, lb, ub)
-        residual_pred = dtr.predict(X_test)
+
+        X_test = np.concatenate([X_test[:, self.n_windows:],
+                                 residual[-1:, :]],
+                                axis=-1)
+        residual_pred = rfr.predict(X_test)
         return y_pred_lin_reg + residual_pred
 
     @rolling

@@ -7,14 +7,13 @@ import argparse
 import warnings
 from oil_forecastor.model_selection import denoising_func
 from r2_oos import evaluation
-import glob
 import sys
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data', type=str,
+    default='../data/return_bi_ml_data_D.csv', type=str,
     help="path to data"
 )
 parser.add_argument(
@@ -172,31 +171,21 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_dtr.to_csv(name_lin_reg + ".csv")
 
-    print("rfr")
-    res_rfr = ml_forecast.rand_forest_reg()
-    r2_test, r2_true = evaluation(res_rfr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_rfr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_rfr.to_csv(name_lin_reg + ".csv")
+    # print("rfr")
+    # res_rfr = ml_forecast.rand_forest_reg()
+    # r2_test, r2_true = evaluation(res_rfr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_rfr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_rfr.to_csv(name_lin_reg + ".csv")
 
-    print("gbr")
-    res_gbr = ml_forecast.grad_boost_reg()
-    r2_test, r2_true = evaluation(res_gbr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_gbr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_gbr.to_csv(name_lin_reg + ".csv")
-
-    # print("hgbr")
-    # res_hgbr = ml_forecast.hist_grad_boost_reg()
-    # res_hgbr = pd.concat([res_hgbr, y_test_no_prefilter],
-    #                      axis=1)
-    # r2_test, r2_true = evaluation(res_hgbr)
-    # print('r2 test {}, r2 true {}'.format(r2_test,
-    # r2_true))
-    # name_lin_reg = make_name("res_hgbr", sw_tuple, n_features, arguments)
-    # res_hgbr.to_csv(name_lin_reg + ".csv")
+    # print("gbr")
+    # res_gbr = ml_forecast.grad_boost_reg()
+    # r2_test, r2_true = evaluation(res_gbr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_gbr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_gbr.to_csv(name_lin_reg + ".csv")
 
 
 if __name__ == '__main__':
@@ -212,8 +201,7 @@ if __name__ == '__main__':
         y_true = y_true['y_test']
         y_true = y_true.rename('y_true')
 
-    paths = glob.glob(arguments.data_path + '/*.csv')
-    paths = [elt for elt in paths if 'return_ml_data_D' not in elt]
+    paths = [arguments.data_path]
     for path in paths:
         exogenous = pd.read_csv(path)
         exogenous = exogenous.set_index('date')
@@ -249,7 +237,7 @@ if __name__ == '__main__':
                 exogenous = exogenous.drop('crude_future', axis=1)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [0, np.inf]:
+            for n_features in [0, np.inf, 50, 10, 0]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
