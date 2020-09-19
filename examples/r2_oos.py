@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import glob
-import os
 from sklearn.metrics import r2_score
 
 
@@ -41,21 +40,27 @@ def r2_oos_ml(path='../results'):
     df_r2.to_csv('r_2.csv')
 
 
-def evaluation(df, delete_outlier=True):
+def evaluation(df, y_true, delete_outlier=False):
+    if y_true is not None:
+        df = pd.concat([df, y_true], axis=1)
     df = df.dropna()
-    # y_test_no_prefilter = df['y_test'].values.flatten()
-    y_pred_zero = df['y_pred_zero'].values.flatten()
 
     y_pred = df['y_pred'].values.flatten()
+    y_test = df['y_test'].values.flatten()
+
     if delete_outlier:
-        mean = y_pred.mean()
-        std = y_pred.std()
-        y_pred = np.where(y_pred >= mean + 3 * std,
-                          mean + 3 * std, y_pred)
-        y_pred = np.where(y_pred <= mean - 3 * std,
-                          mean - 3 * std, y_pred)
-    y_true = df['y_true'].values.flatten()
-    return r2_score(y_true, y_pred), r2_score(y_true, y_pred_zero)
+        y_err = np.abs(y_pred - y_test)
+        y_max_err = np.percentile(y_err, 99.9)
+
+        y_pred = y_pred[y_err < y_max_err]
+        y_test = y_test[y_err < y_max_err]
+
+    r2_true = 0.0
+    if y_true is not None:
+        y_true = df['y_true'].values.flatten()
+        r2_true = r2_score(y_true, y_pred)
+
+    return r2_score(y_test, y_pred), r2_true
 
 
 if __name__ == "__main__":
