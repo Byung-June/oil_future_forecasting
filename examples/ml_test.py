@@ -63,7 +63,7 @@ def make_name(name, csv_name, sw_tuple, n_features, args):
     if n_features > 100:
         path += "_whole"
     else:
-        path += "_" + str(n_features)
+        path += "_features_" + str(n_features)
     path += "_" + filter_method + "_" + "without_epu_" + without_epu
     return path
 
@@ -183,8 +183,16 @@ if __name__ == '__main__':
         y_true = y_true.rename('y_true')
 
     paths = glob.glob(arguments.data_path + '/*.csv')
+    paths = [elt for elt in paths if 'return_ml_data_D' not in elt]
     for path in paths:
         exogenous = pd.read_csv(path)
+
+        crude_future_columns = [elt for elt in exogenous.columns
+                                if 'crude_future' in elt]
+        if len(crude_future_columns) > 1:
+            raise Exception("data has same values"
+                            "delete crude_future_lag_n, n > 0")
+
         exogenous = exogenous.set_index('date')
         exogenous.index = pd.DatetimeIndex(exogenous.index)
         exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
@@ -207,9 +215,8 @@ if __name__ == '__main__':
                 exogenous = exogenous.drop('crude_future', axis=1)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [np.inf, 50, 10]:
-                for sw_tuple in [(arguments.n_samples, arguments.n_windows),
-                                 (15, 5)]:
+            for n_features in [0, 10, 50, np.inf]:
+                for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)

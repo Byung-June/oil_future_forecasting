@@ -83,6 +83,20 @@ def rolling(func):
     return train_model_wrapper
 
 
+def lagged_features_extractor(X_train, X_test, num_lagged=1):
+    X_train_lagged = X_train[:, :num_lagged, :]
+    X_train_exo = X_train[:, num_lagged:, :]
+    X_test_lagged = X_test[:, :num_lagged, :]
+    X_test_exo = X_test[:, num_lagged:, :]
+    return X_train_lagged, X_train_exo, X_test_lagged, X_test_exo
+
+
+def _shape_manager(data):
+    data = data.reshape(-1, data.shape[-1])
+    data = np.transpose(data)
+    return data
+
+
 class MLForecast():
     def __init__(self, data, n_windows, n_samples,
                  start_time, end_time, scaler):
@@ -104,32 +118,36 @@ class MLForecast():
         return X_transformer
 
     def _data_helper(self, time_idx, n_features, method):
-        data_tuple = rolling_train_test_split(
-                self.data, self.n_windows, self.n_samples, time_idx
-            )
-        X_train = np.stack(
-            [elt.values for elt in data_tuple[0]], axis=-1
-        )
-        X_test = np.expand_dims(data_tuple[1].values, axis=-1)
-        X_train = X_train.reshape(-1, X_train.shape[-1])
-        X_train = np.transpose(X_train)
-        X_test = X_test.reshape(X_test.shape[-1], -1)
+        data_tuple = rolling_train_test_split(self.data,
+                                              self.n_windows,
+                                              self.n_samples,
+                                              time_idx)
+        X_train_ = np.stack([elt.values for elt in data_tuple[0]], axis=-1)
+        X_test_ = np.expand_dims(data_tuple[1].values, axis=-1)
+        X_train_lagged, X_train_exo, X_test_lagged, X_test_exo\
+            = lagged_features_extractor(X_train_, X_test_)
+
+        X_train_lagged = _shape_manager(X_train_lagged)
+        X_train_exo = _shape_manager(X_train_exo)
+        X_test_lagged = _shape_manager(X_test_lagged)
+        X_test_exo = _shape_manager(X_test_exo)
         y_train = np.array(data_tuple[2]).reshape(-1, 1)
         y_test = np.array(data_tuple[3]).reshape(1, 1)
 
-        std = X_train.std(axis=0) > 1000
-        X_transformer = self._scaler(X_train, y_train, std,
+        std = X_train_exo.std(axis=0) > 1000
+        X_transformer = self._scaler(X_train_exo, y_train, std,
                                      method=self.scaler)
 
-        X_train_scaled = X_train
-        X_test_scaled = X_test
+        X_train_exo_scaled = X_train_exo
+        X_test_exo_scaled = X_test_exo
         if X_transformer is not None:
-            X_train_scaled[:, std]\
-                = X_transformer.transform(X_train[:, std])
-            X_test_scaled[:, std] = X_transformer.transform(X_test[:, std])
+            X_train_exo_scaled[:, std]\
+                = X_transformer.transform(X_train_exo[:, std])
+            X_test_exo_scaled[:, std]\
+                = X_transformer.transform(X_test_exo[:, std])
         else:
-            X_train_scaled = X_train
-            X_test_scaled = X_test
+            X_train_exo_scaled = X_train_exo
+            X_test_exo_scaled = X_test_exo
 
         # if True:
         #     kpca = KernelPCA(100)
@@ -138,11 +156,15 @@ class MLForecast():
         #     X_test_scaled = kpca.transform(X_test_scaled)
 
         if n_features < np.inf:
-            X_train_scaled, X_test_scaled, y_train, y_test\
-                = selector(X_train_scaled, X_test_scaled,
+            X_train_exo_scaled, X_test_exo_scaled, y_train, y_test\
+                = selector(X_train_exo_scaled, X_test_exo_scaled,
                            y_train, y_test,
                            n_features, method)
         y_train, y_test = y_train.flatten(), y_test.flatten()
+        X_train_scaled = np.concatenate([X_train_lagged, X_train_exo_scaled],
+                                        axis=-1)
+        X_test_scaled = np.concatenate([X_test_lagged, X_test_exo_scaled],
+                                       axis=-1)
         return X_train_scaled, X_test_scaled, y_train, y_test
 
     @rolling
@@ -205,7 +227,8 @@ class MLForecast():
         # )
         # dtr_gridsearch.fit(X_train, y_train)
         # y_pred = dtr_gridsearch.predict(X_test)
-        gbr = GradientBoostingRegressor()
+        gbr = GradientBoostingRegressor(n_estimators=200,
+                                        min_samples_split=4)
         gbr.fit(X_train, y_train)
         y_pred = gbr.predict(X_test)
         return y_pred
