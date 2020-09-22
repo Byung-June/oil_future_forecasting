@@ -13,7 +13,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/return_bi_ml_data_D.csv', type=str,
+    default='../data/vol_ml_data_M.csv', type=str,
     help="path to data"
 )
 parser.add_argument(
@@ -26,12 +26,12 @@ parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
 parser.add_argument('--prefilter', default=False, type=bool)
-parser.add_argument('--n-windows', default=22, type=int)
-parser.add_argument('--n-samples', default=45, type=int)
+parser.add_argument('--n-windows', default=5, type=int)
+parser.add_argument('--n-samples', default=5, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
-parser.add_argument('--true-path', default='../data/return_ml_data_D.csv',
-                    type=str,
+parser.add_argument('--true-path',
+                    default='../data/vol_ml_data_M.csv', type=str,
                     help='path to the data which is unfiltered')
 arguments = parser.parse_args()
 
@@ -78,14 +78,14 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
 
-    print("pipe")
-    res_pipe = ml_forecast.pipeline(n_features=n_features,
-                                    method=arguments.selector)
-    r2_test, r2_true = evaluation(res_pipe, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_pipe", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_pipe.to_csv(name_lin_reg + ".csv")
+    # print("pipe")
+    # res_pipe = ml_forecast.pipeline(n_features=n_features,
+    #                                 method=arguments.selector)
+    # r2_test, r2_true = evaluation(res_pipe, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_pipe", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_pipe.to_csv(name_lin_reg + ".csv")
 
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
@@ -114,19 +114,19 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     r2_test, r2_true = evaluation(res_els, y_true)
     print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
 
-    print("bayes")
-    res_els = ml_forecast.bayes(
-        n_features=n_features, method=arguments.selector
-    )
-    r2_test, r2_true = evaluation(res_els, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # print("bayes")
+    # res_els = ml_forecast.bayes(
+    #     n_features=n_features, method=arguments.selector
+    # )
+    # r2_test, r2_true = evaluation(res_els, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
 
-    print("huber")
-    res_els = ml_forecast.huber(
-        n_features=n_features, method=arguments.selector
-    )
-    r2_test, r2_true = evaluation(res_els, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # print("huber")
+    # res_els = ml_forecast.huber(
+    #     n_features=n_features, method=arguments.selector
+    # )
+    # r2_test, r2_true = evaluation(res_els, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
@@ -136,31 +136,31 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
 
-    print("svr")
-    if n_features > 100:
-        res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
-    else:
-        res_svr = ml_forecast.svr(n_features=n_features,
-                                  method=arguments.selector)
-    r2_test, r2_true = evaluation(res_svr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_svr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_svr.to_csv(name_lin_reg + ".csv")
+    # print("svr")
+    # if n_features > 100:
+    #     res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
+    # else:
+    #     res_svr = ml_forecast.svr(n_features=n_features,
+    #                               method=arguments.selector)
+    # r2_test, r2_true = evaluation(res_svr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_svr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_svr.to_csv(name_lin_reg + ".csv")
 
-    print("kr")
-    if n_features > 100:
-        res_kr = ml_forecast.kernel_ridge(n_features=50,
-                                          method=arguments.selector)
-    else:
-        res_kr = ml_forecast.kernel_ridge(
-            n_features=n_features, method=arguments.selector
-        )
-    r2_test, r2_true = evaluation(res_kr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_kr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_kr.to_csv(name_lin_reg + ".csv")
+    # print("kr")
+    # if n_features > 100:
+    #     res_kr = ml_forecast.kernel_ridge(n_features=50,
+    #                                       method=arguments.selector)
+    # else:
+    #     res_kr = ml_forecast.kernel_ridge(
+    #         n_features=n_features, method=arguments.selector
+    #     )
+    # r2_test, r2_true = evaluation(res_kr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_kr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_kr.to_csv(name_lin_reg + ".csv")
 
     print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
@@ -172,21 +172,21 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_dtr.to_csv(name_lin_reg + ".csv")
 
-    # print("rfr")
-    # res_rfr = ml_forecast.rand_forest_reg()
-    # r2_test, r2_true = evaluation(res_rfr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_rfr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_rfr.to_csv(name_lin_reg + ".csv")
+    print("rfr")
+    res_rfr = ml_forecast.rand_forest_reg()
+    r2_test, r2_true = evaluation(res_rfr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    name_lin_reg = make_name("res_rfr", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_rfr.to_csv(name_lin_reg + ".csv")
 
-    # print("gbr")
-    # res_gbr = ml_forecast.grad_boost_reg()
-    # r2_test, r2_true = evaluation(res_gbr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_gbr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_gbr.to_csv(name_lin_reg + ".csv")
+    print("gbr")
+    res_gbr = ml_forecast.grad_boost_reg()
+    r2_test, r2_true = evaluation(res_gbr, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    name_lin_reg = make_name("res_gbr", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_gbr.to_csv(name_lin_reg + ".csv")
 
 
 if __name__ == '__main__':
@@ -209,9 +209,14 @@ if __name__ == '__main__':
         exogenous.index = pd.DatetimeIndex(exogenous.index)
         exo_dropcolumn = [elt for elt in exogenous.columns if 'Unnamed' in elt]
         exogenous = exogenous.drop(columns=exo_dropcolumn)
-        dropcolumns = ['crude_future_daily_lag1', 'crude_future_daily_lag2',
-                       'crude_future_daily_lag3', 'crude_future_daily_lag4']
-        exogenous = exogenous.drop(columns=dropcolumns)
+        try:
+            dropcolumns = ['crude_future_daily_lag1',
+                           'crude_future_daily_lag2',
+                           'crude_future_daily_lag3',
+                           'crude_future_daily_lag4']
+            exogenous = exogenous.drop(columns=dropcolumns)
+        except Exception as e:
+            print(e)
         assert exogenous.columns[0] == 'y_test'
         assert exogenous.columns[1] == 'crude_future_daily_lag0'
 
