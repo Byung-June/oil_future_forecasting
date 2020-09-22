@@ -4,7 +4,7 @@ from functools import wraps  # for debugging purpose
 from tqdm import tqdm
 import multiprocessing
 from sklearn.model_selection import cross_val_score
-# from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, LinearRegression, \
     BayesianRidge, HuberRegressor, ARDRegression
 from sklearn.tree import DecisionTreeRegressor
@@ -74,9 +74,6 @@ def rolling(func):
             d_y_pred = func(self, train_test, n_features, method)
             d_y_pred = d_y_pred.reshape(1, 1)
             y_pred = recover(i, diff_order, d_y_pred, y_train)
-            lb = y_train.mean() - 3 * np.std(y_train)
-            ub = y_train.mean() + 3 * np.std(y_train)
-            y_pred = max(min(y_pred.flatten(), ub), lb)
 
             df['y_test'].iloc[i+1] = y_test.flatten()
             df['y_pred'].iloc[i+1] = y_pred
@@ -150,12 +147,6 @@ class MLForecast():
             X_train_exo_scaled = X_train_exo
             X_test_exo_scaled = X_test_exo
 
-        # if True:
-        #     kpca = KernelPCA(100)
-        #     kpca = kpca.fit(X_train_scaled)
-        #     X_train_scaled = kpca.transform(X_train_scaled)
-        #     X_test_scaled = kpca.transform(X_test_scaled)
-
         if n_features < np.inf:
             X_train_exo_scaled, X_test_exo_scaled, y_train, y_test\
                 = selector(X_train_exo_scaled, X_test_exo_scaled,
@@ -179,59 +170,55 @@ class MLForecast():
     @rolling
     def lasso(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
-        # lasso_gridsearch = GridSearchCV(
-        #     Lasso(max_iter=3000, tol=5e-2, selection='random'),
-        #     verbose=self.verbose,
-        #     param_grid={"alpha": np.logspace(-3, 2, 15)},
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # lasso_gridsearch.fit(X_train, y_train)
-        # y_pred = lasso_gridsearch.predict(X_test)
-        lasso = Lasso()
-        lasso.fit(X_train, y_train)
-        y_pred = lasso.predict(X_test)
+        lasso_gridsearch = GridSearchCV(
+            Lasso(max_iter=3000, tol=5e-2, selection='random'),
+            verbose=self.verbose,
+            param_grid={"alpha": np.logspace(-3, 2, 15)},
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        lasso_gridsearch.fit(X_train, y_train)
+        y_pred = lasso_gridsearch.predict(X_test)
+        # lasso = Lasso()
+        # lasso.fit(X_train, y_train)
+        # y_pred = lasso.predict(X_test)
         return y_pred
 
     @rolling
-    def decision_tree_reg(self, train_test, n_features=np.inf, method=None):
+    def ard(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
-        # dtr_gridsearch = GridSearchCV(
-        #     DecisionTreeRegressor(),
-        #     verbose=self.verbose,
-        #     param_grid={
-        #         "max_depth": [2, 3, 5, 10, 15, 20],
-        #         "min_samples_split": [0.1, 0.3],
-        #         "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
-        #     },
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # dtr_gridsearch.fit(X_train, y_train)
-        # y_pred = dtr_gridsearch.predict(X_test)
-        dtr = DecisionTreeRegressor()
-        dtr.fit(X_train, y_train)
-        y_pred = dtr.predict(X_test)
+        ard_gridsearch = GridSearchCV(
+            ARDRegression(),
+            verbose=self.verbose,
+            param_grid={"alpha_1": np.logspace(-7, -5, 3),
+                        "alpha_2": np.logspace(-7, -5, 3),
+                        "lambda_1": np.logspace(-7, -5, 3),
+                        "lambda_2": np.logspace(-7, -5, 3)}
+        )
+        ard_gridsearch.fit(X_train, y_train)
+        y_pred = ard_gridsearch.predict(X_test)
         return y_pred
 
     @rolling
-    def grad_boost_reg(self, train_test, n_features=np.inf, method=None):
+    def bayes(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
-        # dtr_gridsearch = GridSearchCV(
-        #     GradientBoostingRegressor(),
-        #     verbose=self.verbose,
-        #     param_grid={
-        #         "learning_rate": [0.05, 0.1, 0.2, 0.3],
-        #         "min_samples_split": [0.1, 0.3],
-        #         'n_estimators': [20, 50, 100],
-        #         'max_depth': [2, 3, 5, 10]
-        #     },
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # dtr_gridsearch.fit(X_train, y_train)
-        # y_pred = dtr_gridsearch.predict(X_test)
-        gbr = GradientBoostingRegressor(n_estimators=200,
-                                        min_samples_split=4)
-        gbr.fit(X_train, y_train)
-        y_pred = gbr.predict(X_test)
+        bayesian_gridsearch = GridSearchCV(
+            BayesianRidge(),
+            verbose=self.verbose,
+            param_grid={"alpha_1": np.logspace(-7, -5, 3),
+                        "alpha_2": np.logspace(-7, -5, 3),
+                        "lambda_1": np.logspace(-7, -5, 3),
+                        "lambda_2": np.logspace(-7, -5, 3)}
+        )
+        bayesian_gridsearch.fit(X_train, y_train)
+        y_pred = bayesian_gridsearch.predict(X_test)
+        return y_pred
+
+    @rolling
+    def huber(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        els = HuberRegressor()
+        els.fit(X_train, y_train)
+        y_pred = els.predict(X_test)
         return y_pred
 
     @rolling
@@ -244,11 +231,15 @@ class MLForecast():
         pcr_scores = []
 
         pca = PCA()
-        X_train_reduced = pca.fit_transform(X_train)
+        X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
         for i in n_components:
             pcr_score = cross_val_score(
-                linear_regressor, X_train_reduced[:, :i], y_train,
-                scoring='r2'
+                linear_regressor,
+                np.concatenate([X_train[:, :self.n_windows],
+                                X_train_reduced[:, :i]],
+                               axis=-1),
+                y_train,
+                scoring='neg_mean_squared_error'
             ).mean()
             pcr_scores.append(pcr_score)
 
@@ -256,66 +247,114 @@ class MLForecast():
         linear_regressor_pcr = LinearRegression()
 
         linear_regressor_pcr.fit(
-            X_train_reduced[:, :n_components_pcr], y_train
-        )
-        X_test_reduced = pca.transform(X_test)[:, :n_components_pcr]
+            np.concatenate([X_train[:, :self.n_windows],
+                            X_train_reduced[:, :n_components_pcr]],
+                           axis=-1),
+            y_train)
+        X_test_reduced\
+            = pca.transform(X_test[:, self.n_windows:])[:, :n_components_pcr]
+        X_test_reduced = np.concatenate([X_test[:, :self.n_windows],
+                                         X_test_reduced],
+                                        axis=-1)
         y_pred = linear_regressor_pcr.predict(X_test_reduced)
-        return y_pred
-
-    @rolling
-    def rand_forest_reg(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        # rfr_gridsearch = GridSearchCV(
-        #     RandomForestRegressor(),
-        #     verbose=self.verbose, param_grid={
-        #         'n_estimators': [20, 50, 100],
-        #         "max_depth": [2, 5, 10],
-        #         "min_samples_split": [0.1, 0.3],
-        #         "min_samples_leaf": [0.1, 0.2, 0.3, 0.5]
-        #     },
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # rfr_gridsearch.fit(X_train, y_train)
-        # y_pred = rfr_gridsearch.predict(X_test)
-        rfr = RandomForestRegressor()
-        rfr.fit(X_train, y_train)
-        y_pred = rfr.predict(X_test)
         return y_pred
 
     @rolling
     def svr(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
-        # svr_gridsearch = GridSearchCV(
-        #     SVR(kernel='rbf', gamma=0.1, cache_size=10000),
-        #     verbose=self.verbose,
-        #     param_grid={
-        #         'C': [0.1, 1, 3, 5],
-        #         'gamma': np.logspace(-3, 1, 8)
-        #     },
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # svr_gridsearch.fit(X_train, y_train)
-        # y_pred = svr_gridsearch.predict(X_test)
-        svr = SVR(kernel='rbf')
-        svr.fit(X_train, y_train)
-        y_pred = svr.predict(X_test)
+        svr_gridsearch = GridSearchCV(
+            SVR(kernel='rbf', gamma=0.1, cache_size=10000),
+            verbose=self.verbose,
+            param_grid={
+                'C': [0.1, 1, 3, 5],
+                'gamma': np.logspace(-3, 1, 8)
+            },
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        svr_gridsearch.fit(X_train, y_train)
+        y_pred = svr_gridsearch.predict(X_test)
+        # svr = SVR(kernel='rbf')
+        # svr.fit(X_train, y_train)
+        # y_pred = svr.predict(X_test)
         return y_pred
 
     @rolling
     def kernel_ridge(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
-        # kr_gridsearch = GridSearchCV(
-        #     KernelRidge(kernel='rbf', gamma=0.1),
-        #     verbose=self.verbose,
-        #     param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
-        #                 "gamma": np.logspace(-3, 1, 8)},
-        #     scoring='r2', n_jobs=n_cpus
-        # )
-        # kr_gridsearch.fit(X_train, y_train)
-        # y_pred = kr_gridsearch.predict(X_test)
-        kr = KernelRidge(kernel='rbf')
-        kr.fit(X_train, y_train)
-        y_pred = kr.predict(X_test)
+        kr_gridsearch = GridSearchCV(
+            KernelRidge(kernel='rbf', gamma=0.1),
+            verbose=self.verbose,
+            param_grid={"alpha": [1, 2, 5, 10, 20, 50, 100],
+                        "gamma": np.logspace(-3, 1, 8)},
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        kr_gridsearch.fit(X_train, y_train)
+        y_pred = kr_gridsearch.predict(X_test)
+        # kr = KernelRidge(kernel='rbf')
+        # kr.fit(X_train, y_train)
+        # y_pred = kr.predict(X_test)
+        return y_pred
+
+    @rolling
+    def decision_tree_reg(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        dtr_gridsearch = GridSearchCV(
+            DecisionTreeRegressor(),
+            verbose=self.verbose,
+            param_grid={
+                "max_depth": [2, 3, 5, 10, 15, 20],
+                "min_samples_split": [2, 4, 8],
+                "min_samples_leaf": [1, 2, 4]
+            },
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        dtr_gridsearch.fit(X_train, y_train)
+        y_pred = dtr_gridsearch.predict(X_test)
+        # dtr = DecisionTreeRegressor()
+        # dtr.fit(X_train, y_train)
+        # y_pred = dtr.predict(X_test)
+        return y_pred
+
+    @rolling
+    def rand_forest_reg(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        rfr_gridsearch = GridSearchCV(
+            RandomForestRegressor(),
+            verbose=self.verbose, param_grid={
+                'n_estimators': [200],
+                "max_depth": [2, 5, 10],
+                "min_samples_split": [2, 4, 8],
+                "min_samples_leaf": [1, 2, 4]
+            },
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        rfr_gridsearch.fit(X_train, y_train)
+        y_pred = rfr_gridsearch.predict(X_test)
+        # rfr = RandomForestRegressor()
+        # rfr.fit(X_train, y_train)
+        # y_pred = rfr.predict(X_test)
+        return y_pred
+
+    @rolling
+    def grad_boost_reg(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        dtr_gridsearch = GridSearchCV(
+            GradientBoostingRegressor(),
+            verbose=self.verbose,
+            param_grid={
+                "learning_rate": [0.1, 0.2, 0.3],
+                "min_samples_split": [2, 4, 8],
+                'n_estimators': [200],
+                'max_depth': [2, 3, 5, 10]
+            },
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        dtr_gridsearch.fit(X_train, y_train)
+        y_pred = dtr_gridsearch.predict(X_test)
+        # gbr = GradientBoostingRegressor(n_estimators=200,
+        #                                 min_samples_split=4)
+        # gbr.fit(X_train, y_train)
+        # y_pred = gbr.predict(X_test)
         return y_pred
 
     @rolling
@@ -325,41 +364,25 @@ class MLForecast():
         lb = y_train.mean() - 3 * np.std(y_train)
         ub = y_train.mean() + 3 * np.std(y_train)
 
-        lin_reg = LinearRegression()
+        lin_reg = ARDRegression()
         lin_reg.fit(X_train[:, :self.n_windows], y_train)
         y_pred_train = lin_reg.predict(X_train[:, :self.n_windows])
         y_pred_train = np.clip(y_pred_train, lb, ub)
 
         residual = y_train - y_pred_train
         residual = np.expand_dims(residual, axis=-1)
-        dtr = DecisionTreeRegressor()
-        dtr.fit(X_train, residual.flatten())
+
+        X_train = np.concatenate([X_train[1:, :], residual[:-1, :]],
+                                 axis=-1)
+
+        rfr = RandomForestRegressor()
+        rfr.fit(X_train[:, self.n_windows:], residual[1:, :].flatten())
 
         y_pred_lin_reg = lin_reg.predict(X_test[:, :self.n_windows])
         y_pred_lin_reg = np.clip(y_pred_lin_reg, lb, ub)
-        residual_pred = dtr.predict(X_test)
+
+        X_test = np.concatenate([X_test[:, self.n_windows:],
+                                 residual[-1:, :]],
+                                axis=-1)
+        residual_pred = rfr.predict(X_test)
         return y_pred_lin_reg + residual_pred
-
-    @rolling
-    def ard(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        els = ARDRegression()
-        els.fit(X_train, y_train)
-        y_pred = els.predict(X_test)
-        return y_pred
-
-    @rolling
-    def bayes(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        els = BayesianRidge()
-        els.fit(X_train, y_train)
-        y_pred = els.predict(X_test)
-        return y_pred
-
-    @rolling
-    def huber(self, train_test, n_features=np.inf, method=None):
-        X_train, X_test, y_train, y_test = train_test
-        els = HuberRegressor()
-        els.fit(X_train, y_train)
-        y_pred = els.predict(X_test)
-        return y_pred

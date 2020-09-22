@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import glob
 from sklearn.metrics import r2_score
+from scipy.stats import t
+from statsmodels.tsa.stattools import acovf
 import os
 
 
@@ -75,6 +77,39 @@ def evaluation(df, y_true, delete_outlier=False):
         r2_true = r2_score(y_true, y_pred)
 
     return r2_score(y_test, y_pred), r2_true
+
+
+def db_test(true, pred1, pred2, h, err_type='MSE'):
+    assert (len(true) == len(pred1)) and (len(true) == len(pred2)), print('check length')
+    true = np.array(true)
+    pred1 = np.array(pred1)
+    pred2 = np.array(pred2)
+
+    err1 = true - pred1
+    err2 = true - pred2
+
+    if err_type == 'MSE':
+        d = np.power(err1, 2) - np.power(err2, 2)
+    elif err_type == 'MAD':
+        d = np.abs(err1) - np.abs(err2)
+    elif err_type == 'MAPE':
+        d = np.abs(np.divide(err1, true)) - np.abs(np.divide(err2, true))
+    else:
+        d = []
+        raise TypeError
+
+    def autocovariance(dd, length, lag):
+        return np.sum([((dd[i + lag]) - np.mean(dd)) * (dd[i] - np.mean(dd))
+                       for i in np.arange(0, length-lag)]) \
+               / float(length)
+
+    T = float(len(d))
+    gamma = [autocovariance(d, len(d), lag) for lag in range(0, h)]
+    V_d = (gamma[0] + 2 * sum(gamma[1:])) / T
+    harvey_adj = ((T + 1 - 2 * h + h * (h - 1) / T) / T) ** (0.5)
+    DM_stat = harvey_adj * (V_d ** (-0.5) * np.mean(d))
+    p_value = 2 * t.cdf(-abs(DM_stat), df=T - 1)
+    return DM_stat, p_value
 
 
 if __name__ == "__main__":

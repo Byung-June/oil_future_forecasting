@@ -43,8 +43,6 @@ def selector(
 
 
 def _f_classif_square_selector(X_train, X_test, y_train, y_test, n_features):
-    if n_features > X_train.shape[0]:
-        n_features = X_train.shape[0]
     kbest = SelectKBest(f_classif, n_features)
     kbest = kbest.fit(X_train, y_train)
     X_train = kbest.transform(X_train)
@@ -53,8 +51,6 @@ def _f_classif_square_selector(X_train, X_test, y_train, y_test, n_features):
 
 
 def _f_regression_selector(X_train, X_test, y_train, y_test, n_features):
-    if n_features > X_train.shape[0]:
-        n_features = X_train.shape[0]
     kbest = SelectKBest(f_regression, n_features)
     kbest.fit(X_train, y_train)
     X_train = kbest.transform(X_train)
@@ -64,8 +60,6 @@ def _f_regression_selector(X_train, X_test, y_train, y_test, n_features):
 
 def _mutual_info_regression_selector(X_train, X_test, y_train, y_test,
                                      n_features):
-    if n_features > X_train.shape[0]:
-        n_features = X_train.shape[0]
     kbest = SelectKBest(mutual_info_regression, n_features)
     kbest.fit(X_train, y_train)
     X_train = kbest.transform(X_train)
