@@ -29,13 +29,14 @@ class ZeroPadder(BasePadder):
     def transform(self, seq):
         return np.hstack([
             self.PAD_VALUE * np.ones(self.padding_size),
-            seq,
-            self.PAD_VALUE * np.ones(self.padding_size),
+            seq
+            # , self.PAD_VALUE * np.ones(self.padding_size),
         ])
 
     def inv_transform(self, seq):
         ps = self.padding_size
-        return  seq[ps:-ps]
+        return seq[ps:-ps]
+
 
 class SamePadder(BasePadder):
     def __init__(self, padding_size):
@@ -47,8 +48,8 @@ class SamePadder(BasePadder):
 
         return np.hstack([
             start_val * np.ones(self.padding_size),
-            seq,
-            end_val * np.ones(self.padding_size),
+            seq
+            # , end_val * np.ones(self.padding_size),
         ])
 
     def inv_transform(self, seq):

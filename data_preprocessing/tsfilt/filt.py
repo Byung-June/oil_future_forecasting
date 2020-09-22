@@ -8,14 +8,14 @@ from .padding import get_padder
 class BaseSpatialFilter():
     """Base class for time series filtering.
     """
-    def __init__(self, win_size=3, padding="same", n_iter=1):
-        assert win_size % 2 == 1, "window size must be odd value."
+    def __init__(self, win_size=5, padding="same", n_iter=1):
+        # assert win_size % 2 == 1, "window size must be odd value."
         assert padding in ("zero", "same", "identical"),\
             "padding method has to be `zero`, `same` or `identical`."
 
         self.win_size = win_size
-        self.padder = get_padder(padding, {"padding_size": win_size // 2})
-        self.med_idx = win_size // 2
+        self.padder = get_padder(padding, {"padding_size": win_size - 1})
+        self.med_idx = win_size - 1
         self.n_iter = n_iter
 
     def fit(self, seq):
@@ -102,7 +102,7 @@ class BilateralFilter(GaussianFilter):
             self.sigma_i = self._suggest_sigma_i()
 
         w = norm.pdf(sub_seq, loc=sub_seq[self.med_idx], scale=self.sigma_i)
-        weight = self.weight * w
+        weight = self.weight * w #* np.array([0.9**(len(w) - i - 1) for i in range(len(w))])
         weight /= weight.sum()
 
         prod = weight.reshape(1, -1) @ sub_seq.reshape(-1, 1)

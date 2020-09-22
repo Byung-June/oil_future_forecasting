@@ -11,3 +11,11 @@ def window(seq, n=2):
     for elem in it:
         result = result[1:] + (elem,)
         yield np.array(result)
+
+
+if __name__=="__main__":
+    s = np.random.rand(10)
+    print('s', s)
+    sw = window(s, 4)
+    for x in sw:
+        print(x)

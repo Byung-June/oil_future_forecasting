@@ -7,9 +7,11 @@ from _data_jodi import jodi_read
 from ml_data_preprocessing.make_data import make_data
 from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
 import copy
+from sklearn.metrics import r2_score
 from tsfilt import (
     BoxFilter, GaussianFilter, BilateralFilter, IdenticalFilter, NonLocalMeanFilter
 )
+import itertools
 
 
 def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
@@ -60,7 +62,8 @@ def resample_df(df_, freq='W'):
 
 
 def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
-             scaler=False, filter=None, y_type='return'):
+             scaler=False, filter=None, y_type='return',
+             bi_w=5, bi_sig_d=10, bi_sig_i=1):
     url_list_daily = [
         [
             'https://www.eia.gov/dnav/pet/xls/PET_PRI_FUT_S1_D.xls',
@@ -135,26 +138,45 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         df_y = denoising_func(df_y, filter=filter)
         if y_type=='return':
             df_y['y_test'] = df_y['y_test'].pct_change()
+        elif y_type=='price_diff':
+            df_y['y_test'] = df_y['y_test'].diff()
+        elif y_type == 'sharpe':
+            df_y['y_test'] = df_y['y_test'].pct_change() / (df_y['y_test'].rolling(22).std() / np.sqrt(22))
+        elif y_type == 'vol':
+            df_y['y_test'] = (df_y['y_test'].rolling(22).std() / np.sqrt(22))
         else:
             df_y['y_test'] = df_y['y_test']
 
+        if freq == 'M':
+            df_y = resample_df(df_y, freq='M')
+        b_index = df_y.index
+
     elif filter == 'bilateral':
         print('std', np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        # filt = BilateralFilter(5, sigma_d=1.5, sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        filt = BilateralFilter(5, sigma_d=np.std(df_y['y_test'][~df_y['y_test'].isna()].values), sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        # filt = GaussianFilter(bi_w)
+        filt = BilateralFilter(bi_w, sigma_d=bi_sig_d, sigma_i=bi_sig_i * np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        # filt = BilateralFilter(5, sigma_d=np.std(df_y['y_test'][~df_y['y_test'].isna()].values), sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
+        # print('len', len(df_y['y_test'].values), len(filt.fit_transform(df_y['y_test'].values)))
         df_y['y_test'] = filt.fit_transform(df_y['y_test'].values)
         if y_type=='return':
             df_y['y_test'] = df_y['y_test'].pct_change()
+        elif y_type=='price_diff':
+            df_y['y_test'] = df_y['y_test'].diff()
+        elif y_type == 'sharpe':
+            df_y['y_test'] = df_y['y_test'].pct_change() / df_y['y_test'].rolling(22).std()
+        elif y_type=='vol':
+            df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
         else:
             df_y['y_test'] = df_y['y_test']
+
+        if freq == 'M':
+            df_y = resample_df(df_y, freq='M')
+        b_index = df_y.index
+
     else:
         pass
 
     df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
-    df_y['crude_future_daily_lag1'] = df_y['y_test'].shift(2)
-    df_y['crude_future_daily_lag2'] = df_y['y_test'].shift(3)
-    df_y['crude_future_daily_lag3'] = df_y['y_test'].shift(4)
-    df_y['crude_future_daily_lag4'] = df_y['y_test'].shift(5)
     print(222, df_y)
 
     col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
@@ -165,6 +187,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     # Week
     df_w = df_w[0]
     df_w = df_slicing(fill_bs_date(b_index, df_w).dropna(), start=start_date, end=end_date)
+    if freq == 'M':
+        df_w = resample_df(df_w, freq='M')
     col_stationary_index, col_stationary_diff = stationary_df(df_w)
     df_w = make_stationary(df_w, col_stationary_index, col_stationary_diff)
 
@@ -194,11 +218,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     # Merge (Freq)
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')
     df = pd.merge(df, df_m, left_index=True, right_index=True, how='left')
-    df = df[['y_test', 'crude_future_daily_lag0', 'crude_future_daily_lag1',
-             'crude_future_daily_lag2', 'crude_future_daily_lag3',
-             'crude_future_daily_lag4',
-             # 'y_test_filtered', 'y_test_filtered_lag0', 'y_test_filtered_lag1',
-             # 'y_test_filtered_lag2', 'y_test_filtered_lag3', 'y_test_filtered_lag4',
+    df = df[['y_test', 'crude_future_daily_lag0',
              'wti_spot_daily', 'ngl_spot_daily',
              'ngl_furture_daily', 'brent_spot_daily',
              'cur_weekly',
@@ -220,15 +240,61 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
 
     df_input.to_csv(filename)
-    return df_input
+    r2 = 0
+    y_pred = df_input['y_test']
+
+    if y_type == 'return':
+        y_test = pd.read_csv('return_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
+    elif y_type == 'price':
+        y_test = pd.read_csv('price_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
+    elif y_type == 'price_diff':
+        y_test = pd.read_csv('price_diff_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
+    elif y_type == 'sharpe':
+        y_test = pd.read_csv('sharpe_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
+    elif y_type == 'vol':
+        y_test = pd.read_csv('vol_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
+
+    return df_input, r2
 
 
 if __name__ == '__main__':
-    # gen_data(filename='return_ml_data_D.csv', freq='D', filter=None, y_type='return')
-    # gen_data(filename='return_ma_ml_data_D.csv', freq='D', filter='moving_average', y_type='return')
-    gen_data(filename='2return_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='return')
+    # gen_data(filename='return_ml_data_W.csv', freq='W', filter=None, y_type='return')
+    # gen_data(filename='return_ma_ml_data_W.csv', freq='W', filter='moving_average', y_type='return')
+    # gen_data(filename='return_filter_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='return')
+
+    gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')
+    # b = [3, 5]
+    # d = [50]
+    # i = [100]
+    #
+    # for bi_w, bi_sig_d, bi_sig_i in itertools.product(b, d, i):
+    #     print('parameter', bi_w, bi_sig_d, bi_sig_i)
+    #     # gen_data(filename='return_bi_ml_data_W_w%s_d%s_i%s.csv' % (bi_w, bi_sig_d, bi_sig_i), freq='W',
+    #     #          filter='bilateral', y_type='return'
+    #     #          , bi_w=bi_w, bi_sig_d=bi_sig_d, bi_sig_i=bi_sig_i)
+    #     gen_data(filename='bi_vol_ml_data_M_w%s_d%s_i%s.csv' % (bi_w, bi_sig_d, bi_sig_i), freq='M',
+    #              filter='bilateral', y_type='vol'
+    #              , bi_w=bi_w, bi_sig_d=bi_sig_d, bi_sig_i=bi_sig_i)
+
+
+    # gen_data(filename='price_diff_bi_ml_data_D_w5.csv', freq='D', filter='bilateral', y_type='price_diff')
+    # gen_data(filename='price_diff_ml_data_D_w5.csv', freq='D', y_type='price_diff')
 
     # gen_data(filename='price_ml_data_D.csv', freq='D', filter=None, y_type='price')
+    # gen_data(filename='price_bi_ml_data_D_w5.csv', freq='D', filter='bilateral', y_type='price')
     # gen_data(filename='2price_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='price')
     # gen_data(filename='price_wl_ml_data_D.csv', freq='D', filter='wavelet_db1', y_type='price')
+
+    # gen_data(filename='sharpe_ml_data_D.csv', freq='D', filter=None, y_type='sharpe')
+    # gen_data(filename='sharpe_ml_data_D.csv', freq='D', filter='bilateral', y_type='sharpe')
 

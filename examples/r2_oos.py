@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import glob
 from sklearn.metrics import r2_score
+import os
 
 
 def r2_oos_func(data_):
@@ -12,8 +13,14 @@ def r2_oos_func(data_):
     # data_ = data_[data_['3'] < np.percentile(data_['3'], 99.9)]
     y_pred = data_.iloc[:, 0]
     y_test = data_.iloc[:, 1]
-    r2_oos = r2_score(y_test, y_pred)
-    return r2_oos
+    r2_oos_test = r2_score(y_test, y_pred)
+
+    data_true = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
+    # print(data_true)
+    y_true = data_true[['y_test']].loc[y_pred.index]
+    # print('y_true', y_true)
+    r2_oos_true = r2_score(y_true, y_pred)
+    return r2_oos_test, r2_oos_true
 
 
 def r2_oos_ml(path='../results'):
