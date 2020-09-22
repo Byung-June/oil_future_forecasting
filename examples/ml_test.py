@@ -78,15 +78,6 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
 
-    # print("pipe")
-    # res_pipe = ml_forecast.pipeline(n_features=n_features,
-    #                                 method=arguments.selector)
-    # r2_test, r2_true = evaluation(res_pipe, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_pipe", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_pipe.to_csv(name_lin_reg + ".csv")
-
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(
         n_features=n_features, method=arguments.selector
@@ -114,19 +105,12 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     r2_test, r2_true = evaluation(res_els, y_true)
     print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
 
-    # print("bayes")
-    # res_els = ml_forecast.bayes(
-    #     n_features=n_features, method=arguments.selector
-    # )
-    # r2_test, r2_true = evaluation(res_els, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-
-    # print("huber")
-    # res_els = ml_forecast.huber(
-    #     n_features=n_features, method=arguments.selector
-    # )
-    # r2_test, r2_true = evaluation(res_els, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    print("bayes")
+    res_els = ml_forecast.bayes(
+        n_features=n_features, method=arguments.selector
+    )
+    r2_test, r2_true = evaluation(res_els, y_true)
+    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
 
     print("pcr")
     res_pcr = ml_forecast.pcr()
@@ -135,32 +119,6 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     name_lin_reg = make_name("res_pcr", csv_name,
                              sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
-
-    # print("svr")
-    # if n_features > 100:
-    #     res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
-    # else:
-    #     res_svr = ml_forecast.svr(n_features=n_features,
-    #                               method=arguments.selector)
-    # r2_test, r2_true = evaluation(res_svr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_svr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_svr.to_csv(name_lin_reg + ".csv")
-
-    # print("kr")
-    # if n_features > 100:
-    #     res_kr = ml_forecast.kernel_ridge(n_features=50,
-    #                                       method=arguments.selector)
-    # else:
-    #     res_kr = ml_forecast.kernel_ridge(
-    #         n_features=n_features, method=arguments.selector
-    #     )
-    # r2_test, r2_true = evaluation(res_kr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_kr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_kr.to_csv(name_lin_reg + ".csv")
 
     print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(
@@ -187,6 +145,48 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     name_lin_reg = make_name("res_gbr", csv_name,
                              sw_tuple, n_features, arguments)
     res_gbr.to_csv(name_lin_reg + ".csv")
+
+    # print("pipe")
+    # res_pipe = ml_forecast.pipeline(n_features=n_features,
+    #                                 method=arguments.selector)
+    # r2_test, r2_true = evaluation(res_pipe, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_pipe", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_pipe.to_csv(name_lin_reg + ".csv")
+
+    # print("huber")
+    # res_els = ml_forecast.huber(
+    #     n_features=n_features, method=arguments.selector
+    # )
+    # r2_test, r2_true = evaluation(res_els, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+
+    # print("svr")
+    # if n_features > 100:
+    #     res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
+    # else:
+    #     res_svr = ml_forecast.svr(n_features=n_features,
+    #                               method=arguments.selector)
+    # r2_test, r2_true = evaluation(res_svr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_svr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_svr.to_csv(name_lin_reg + ".csv")
+
+    # print("kr")
+    # if n_features > 100:
+    #     res_kr = ml_forecast.kernel_ridge(n_features=50,
+    #                                       method=arguments.selector)
+    # else:
+    #     res_kr = ml_forecast.kernel_ridge(
+    #         n_features=n_features, method=arguments.selector
+    #     )
+    # r2_test, r2_true = evaluation(res_kr, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_kr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_kr.to_csv(name_lin_reg + ".csv")
 
 
 if __name__ == '__main__':
