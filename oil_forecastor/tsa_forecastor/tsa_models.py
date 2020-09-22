@@ -35,10 +35,10 @@ def arima(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num):
     params = arima_train.params()
     orders = arima_train.get_params()['order']
     pred, conf_int = arima_train.predict(n_periods=forecast_period, exogenous=x_test, return_conf_int=True)
-    lb = np.mean(y_train) - 3 * np.std(y_train)
-    ub = np.mean(y_train) + 3 * np.std(y_train)
-    pred = max(min(pred[0], ub), lb)
-    return [t_, pred, y_test, x_train_pos, params, orders, conf_int[0]]
+    # lb = np.mean(y_train) - 3 * np.std(y_train)
+    # ub = np.mean(y_train) + 3 * np.std(y_train)
+    # pred = max(min(pred[0], ub), lb)
+    return [t_, pred[0], y_test, x_train_pos, params, orders, conf_int[0]]
 
 
 def garch(x_train, x_test, y_train, y_test, t_, forecast_period, feature_num, model='arx-garch'):

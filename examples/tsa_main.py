@@ -84,8 +84,8 @@ class GenModel:
 # %%
 if __name__ == '__main__':
     ######
-    data = pd.read_csv('../data_preprocessing/bi_vol_ml_data_M_w3_d10_i10.csv', index_col=0)
-    # data = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
+    # data = pd.read_csv('../data_preprocessing/bi_vol_ml_data_M_w3_d10_i10.csv', index_col=0)
+    data = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
     data = data.drop(['crude_future_daily_lag0',
                       # 'crude_future_daily_lag1', 'crude_future_daily_lag2',
                       # 'crude_future_daily_lag3', 'crude_future_daily_lag4'
@@ -101,17 +101,13 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     wsf_list = [
-        [5, 15, 0],
-        [5, 15, 10],
-        [22, 45, 0],
-        [22, 45, 10],
-        [3, 12, 0],
-        [3, 18, 0],
-        [6, 18, 0],
-        [3, 24, 0],
-        [6, 24, 0],
-        [9, 24, 0],
-        [12, 24, 0]
+        [3, 12, 10],
+        [3, 18, 10],
+        [6, 18, 10],
+        [3, 24, 10],
+        [6, 24, 10],
+        [9, 24, 10],
+        [12, 24, 10]
     ]
 
     for w, s, f in wsf_list:
@@ -121,5 +117,5 @@ if __name__ == '__main__':
         g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                      denoise=None)
         arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-        arma.to_csv('bi_vol_arima_M_%s_%s_%s.csv' % (input_w, input_s, input_f))
+        arma.to_csv('vol_arima_M_%s_%s_%s_no_bound.csv' % (input_w, input_s, input_f))
         print('result', arma)

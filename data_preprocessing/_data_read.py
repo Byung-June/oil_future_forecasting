@@ -128,8 +128,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_d = df_d[df_d['y_test'] > 0]
 
     # resampling frequency before making return
-    if freq == 'W':
-        df_d = resample_df(df_d)
+    # if freq == 'W':
+    #     df_d = resample_df(df_d)
     b_index = df_d.index
 
     df_y = df_d.iloc[:, [0]].shift(-1)
@@ -143,10 +143,20 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         elif y_type == 'sharpe':
             df_y['y_test'] = df_y['y_test'].pct_change() / (df_y['y_test'].rolling(22).std() / np.sqrt(22))
         elif y_type == 'vol':
-            df_y['y_test'] = (df_y['y_test'].rolling(22).std() / np.sqrt(22))
+            if freq == 'W':
+                df_y['y_test'] = df_y['y_test'].rolling(5).std() / np.sqrt(5)
+            if freq == 'M':
+                df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
+        elif y_type == 'rvol':
+            if freq == 'W':
+                df_y['y_test'] = df_y['y_test'].pct_change().rolling(5).std() / np.sqrt(5)
+            if freq == 'M':
+                df_y['y_test'] = df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22)
         else:
             df_y['y_test'] = df_y['y_test']
 
+        if freq == 'W':
+            df_y = resample_df(df_y, freq='W')
         if freq == 'M':
             df_y = resample_df(df_y, freq='M')
         b_index = df_y.index
@@ -155,8 +165,6 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         print('std', np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
         # filt = GaussianFilter(bi_w)
         filt = BilateralFilter(bi_w, sigma_d=bi_sig_d, sigma_i=bi_sig_i * np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        # filt = BilateralFilter(5, sigma_d=np.std(df_y['y_test'][~df_y['y_test'].isna()].values), sigma_i=np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        # print('len', len(df_y['y_test'].values), len(filt.fit_transform(df_y['y_test'].values)))
         df_y['y_test'] = filt.fit_transform(df_y['y_test'].values)
         if y_type=='return':
             df_y['y_test'] = df_y['y_test'].pct_change()
@@ -165,10 +173,20 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         elif y_type == 'sharpe':
             df_y['y_test'] = df_y['y_test'].pct_change() / df_y['y_test'].rolling(22).std()
         elif y_type=='vol':
-            df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
+            if freq == 'W':
+                df_y['y_test'] = df_y['y_test'].rolling(5).std() / np.sqrt(5)
+            if freq == 'M':
+                df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
+        elif y_type=='rvol':
+            if freq == 'W':
+                df_y['y_test'] = df_y['y_test'].pct_change().rolling(5).std() / np.sqrt(5)
+            if freq == 'M':
+                df_y['y_test'] = df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22)
         else:
             df_y['y_test'] = df_y['y_test']
 
+        if freq == 'W':
+            df_y = resample_df(df_y, freq='W')
         if freq == 'M':
             df_y = resample_df(df_y, freq='M')
         b_index = df_y.index
@@ -263,7 +281,10 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         y_test = pd.read_csv('vol_ml_data_%s.csv' % freq)['y_test']
         r2 = r2_score(y_test, y_pred)
         print('r2', r2)
-
+    elif y_type == 'rvol':
+        y_test = pd.read_csv('rvol_ml_data_%s.csv' % freq)['y_test']
+        r2 = r2_score(y_test, y_pred)
+        print('r2', r2)
     return df_input, r2
 
 
@@ -272,17 +293,19 @@ if __name__ == '__main__':
     # gen_data(filename='return_ma_ml_data_W.csv', freq='W', filter='moving_average', y_type='return')
     # gen_data(filename='return_filter_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='return')
 
-    gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')
-    # b = [3, 5]
-    # d = [50]
-    # i = [100]
+    # gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')
+    # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='vol')
+    gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='rvol')
+    # b = [3]
+    # d = [20]
+    # i = [50]
     #
     # for bi_w, bi_sig_d, bi_sig_i in itertools.product(b, d, i):
     #     print('parameter', bi_w, bi_sig_d, bi_sig_i)
     #     # gen_data(filename='return_bi_ml_data_W_w%s_d%s_i%s.csv' % (bi_w, bi_sig_d, bi_sig_i), freq='W',
     #     #          filter='bilateral', y_type='return'
     #     #          , bi_w=bi_w, bi_sig_d=bi_sig_d, bi_sig_i=bi_sig_i)
-    #     gen_data(filename='bi_vol_ml_data_M_w%s_d%s_i%s.csv' % (bi_w, bi_sig_d, bi_sig_i), freq='M',
+    #     gen_data(filename='bi_vol_ml_data_W_w%s_d%s_i%s.csv' % (bi_w, bi_sig_d, bi_sig_i), freq='W',
     #              filter='bilateral', y_type='vol'
     #              , bi_w=bi_w, bi_sig_d=bi_sig_d, bi_sig_i=bi_sig_i)
 

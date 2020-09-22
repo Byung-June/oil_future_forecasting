@@ -5,22 +5,29 @@ from sklearn.metrics import r2_score
 import os
 
 
-def r2_oos_func(data_):
-    data_ = pd.read_csv(data_, index_col=1)
-    data_ = data_.drop(columns=['Unnamed: 0'])
-    data_['3'] = np.abs(data_['1'] - data_['2'])
-    # print('percentile', data, np.percentile(data_['3'], 99.9), np.percentile(data_['3'], 0.1))
-    # data_ = data_[data_['3'] < np.percentile(data_['3'], 99.9)]
+def r2_oos_func(data_, type='tsa'):
+    if type=='tsa':
+        data_ = pd.read_csv(data_, index_col=1)
+        data_ = data_.drop(columns=['Unnamed: 0'])
+        data_ = data_.dropna(axis=0)
+    else:
+        # type=='ml'
+        data_ = pd.read_csv(data_, index_col=0)
+        data_ = data_.dropna(axis=0)
+
     y_pred = data_.iloc[:, 0]
     y_test = data_.iloc[:, 1]
-    r2_oos_test = r2_score(y_test, y_pred)
+    r2_oos = [r2_score(y_test, y_pred)]
 
-    data_true = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
-    # print(data_true)
-    y_true = data_true[['y_test']].loc[y_pred.index]
-    # print('y_true', y_true)
-    r2_oos_true = r2_score(y_true, y_pred)
-    return r2_oos_test, r2_oos_true
+    for n_dates in [120, 60, 36, 24, 12]:
+        y_pred = data_.iloc[-n_dates:, 0]
+        y_test = data_.iloc[-n_dates:, 1]
+        r2_oos.append(r2_score(y_test, y_pred))
+
+    # data_true = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
+    # y_true = data_true[['y_test']].loc[y_pred.index]
+    # r2_oos_true = r2_score(y_true, y_pred)
+    return r2_oos
 
 
 def r2_oos_ml(path='../results'):
@@ -71,9 +78,17 @@ def evaluation(df, y_true, delete_outlier=False):
 
 
 if __name__ == "__main__":
-    path = os.getcwd()
+    path_tsa = os.getcwd()
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
     file = '\*.csv'
-    data_list = glob.glob(path + file)
-    for data in data_list:
-        print(data, r2_oos_func(data))
-    # r2_oos_ml(path=path, file=file)
+
+    data_list_tsa = glob.glob(path_tsa + file)
+    for data in data_list_tsa:
+        print(data)
+        print(r2_oos_func(data))
+
+    data_list_ml = glob.glob(path_ml + file)
+    for data in data_list_ml:
+        print(data)
+        print(r2_oos_func(data, type='ml'))
+
