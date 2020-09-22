@@ -192,10 +192,10 @@ class MLForecast():
         ard_gridsearch = GridSearchCV(
             ARDRegression(),
             verbose=self.verbose,
-            param_grid={"alpha_1": np.logspace(-7, -5, 5),
-                        "alpha_2": np.logspace(-7, -5, 5),
-                        "lambda_1": np.logspace(-7, -5, 5),
-                        "lambda_2": np.logspace(-7, -5, 5)}
+            param_grid={"alpha_1": np.logspace(-7, -5, 3),
+                        "alpha_2": np.logspace(-7, -5, 3),
+                        "lambda_1": np.logspace(-7, -5, 3),
+                        "lambda_2": np.logspace(-7, -5, 3)}
         )
         ard_gridsearch.fit(X_train, y_train)
         y_pred = ard_gridsearch.predict(X_test)
@@ -207,10 +207,10 @@ class MLForecast():
         bayesian_gridsearch = GridSearchCV(
             BayesianRidge(),
             verbose=self.verbose,
-            param_grid={"alpha_1": np.logspace(-7, -5, 5),
-                        "alpha_2": np.logspace(-7, -5, 5),
-                        "lambda_1": np.logspace(-7, -5, 5),
-                        "lambda_2": np.logspace(-7, -5, 5)}
+            param_grid={"alpha_1": np.logspace(-7, -5, 3),
+                        "alpha_2": np.logspace(-7, -5, 3),
+                        "lambda_1": np.logspace(-7, -5, 3),
+                        "lambda_2": np.logspace(-7, -5, 3)}
         )
         bayesian_gridsearch.fit(X_train, y_train)
         y_pred = bayesian_gridsearch.predict(X_test)
