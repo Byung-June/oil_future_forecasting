@@ -237,7 +237,7 @@ if __name__ == '__main__':
             print(e)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [50, 10, 0]:
+            for n_features in [np.inf, 50, 10, 0]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
