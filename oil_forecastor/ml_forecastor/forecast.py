@@ -231,7 +231,7 @@ class MLForecast():
         linear_regressor = LinearRegression()
         pcr_scores = []
 
-        pca = PCA()
+        pca = PCA(random_state=self.random_state)
         X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
         for i in n_components:
             pcr_score = cross_val_score(
