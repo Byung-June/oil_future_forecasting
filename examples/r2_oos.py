@@ -7,6 +7,61 @@ from statsmodels.tsa.stattools import acovf
 import os
 
 
+def db_test(true, pred1, pred2, h, err_type='MSE'):
+    assert (len(true) == len(pred1)) and (len(true) == len(pred2)), print('check length')
+    true = np.array(true)
+    pred1 = np.array(pred1)
+    pred2 = np.array(pred2)
+
+    err1 = true - pred1
+    err2 = true - pred2
+
+    if err_type == 'MSE':
+        d = np.power(err1, 2) - np.power(err2, 2)
+    elif err_type == 'MAD':
+        d = np.abs(err1) - np.abs(err2)
+    elif err_type == 'MAPE':
+        d = np.abs(np.divide(err1, true)) - np.abs(np.divide(err2, true))
+    else:
+        raise TypeError
+
+    def auto_covariance(dd, length, lag):
+        return np.sum([((dd[i + lag]) - np.mean(dd)) * (dd[i] - np.mean(dd))
+                       for i in np.arange(0, length-lag)]) \
+               / float(length)
+
+    T = float(len(d))
+    gamma = [auto_covariance(d, len(d), lag) for lag in range(0, h)]
+    V_d = (gamma[0] + 2 * sum(gamma[1:])) / T
+    harvey_adj = ((T + 1 - 2 * h + h * (h - 1) / T) / T) ** 0.5
+    DM_stat = harvey_adj * (V_d ** (-0.5) * np.mean(d))
+    p_value = 2 * t.cdf(-abs(DM_stat), df=T - 1)
+    return DM_stat, p_value
+
+
+def pt_test(true, pred):
+    assert (len(true) == len(pred)), print('check length')
+    true = np.where(true > 0, 1, -1)
+    pred = np.where(true > 0, 1, -1)
+    n = len(true)
+
+    def p_hat(y, x):
+        return np.sum(np.where(np.multiply(y, x) > 0, 1, 0)) / n
+
+    P_hat = p_hat(true, pred)
+    P_hat_y = p_hat(true, 1)
+    P_hat_x = p_hat(pred, 1)
+    P_hat_star = P_hat_y * P_hat_x + (1 - P_hat_y) * (1 - P_hat_x)
+    V_hat = P_hat_star * (1 - P_hat_star) / n
+    V_hat_star = (np.power(2 * P_hat_y - 1, 2) * P_hat_x * (1 - P_hat_x) / n) \
+                 + (np.power(2 * P_hat_x - 1, 2) * P_hat_y * (1 - P_hat_y) / n) \
+                 + 4 / np.power(n, 2) * P_hat_y * P_hat_x * (1 - P_hat_y) * (1 - P_hat_x)
+
+    pt_stat = (P_hat - P_hat_star) / np.sqrt(V_hat - V_hat_star)
+    p_value = t.cdf(-abs(pt_stat), df=n - 1)
+    return pt_stat, p_value
+
+
 def r2_oos_func(data_, type='tsa'):
     if type=='tsa':
         data_ = pd.read_csv(data_, index_col=1)
@@ -20,16 +75,21 @@ def r2_oos_func(data_, type='tsa'):
     y_pred = data_.iloc[:, 0]
     y_test = data_.iloc[:, 1]
     r2_oos = [r2_score(y_test, y_pred)]
+    y_t = y_test.shift(1)
+    pt_y = y_test - y_t
+    pt_x = y_pred - y_t
+    pt_p_value = [pt_test(pt_y, pt_x)[1]]
 
     for n_dates in [120, 60, 36, 24, 12]:
         y_pred = data_.iloc[-n_dates:, 0]
         y_test = data_.iloc[-n_dates:, 1]
         r2_oos.append(r2_score(y_test, y_pred))
 
-    # data_true = pd.read_csv('../data_preprocessing/vol_ml_data_M.csv', index_col=0)
-    # y_true = data_true[['y_test']].loc[y_pred.index]
-    # r2_oos_true = r2_score(y_true, y_pred)
-    return r2_oos
+        y_test = pt_y.iloc[-n_dates:]
+        y_pred = pt_x.iloc[-n_dates:]
+        pt_p_value.append(pt_test(y_test, y_pred)[1])
+
+    return r2_oos, pt_p_value
 
 
 def r2_oos_ml(path='../results'):
@@ -79,42 +139,12 @@ def evaluation(df, y_true, delete_outlier=False):
     return r2_score(y_test, y_pred), r2_true
 
 
-def db_test(true, pred1, pred2, h, err_type='MSE'):
-    assert (len(true) == len(pred1)) and (len(true) == len(pred2)), print('check length')
-    true = np.array(true)
-    pred1 = np.array(pred1)
-    pred2 = np.array(pred2)
 
-    err1 = true - pred1
-    err2 = true - pred2
-
-    if err_type == 'MSE':
-        d = np.power(err1, 2) - np.power(err2, 2)
-    elif err_type == 'MAD':
-        d = np.abs(err1) - np.abs(err2)
-    elif err_type == 'MAPE':
-        d = np.abs(np.divide(err1, true)) - np.abs(np.divide(err2, true))
-    else:
-        d = []
-        raise TypeError
-
-    def autocovariance(dd, length, lag):
-        return np.sum([((dd[i + lag]) - np.mean(dd)) * (dd[i] - np.mean(dd))
-                       for i in np.arange(0, length-lag)]) \
-               / float(length)
-
-    T = float(len(d))
-    gamma = [autocovariance(d, len(d), lag) for lag in range(0, h)]
-    V_d = (gamma[0] + 2 * sum(gamma[1:])) / T
-    harvey_adj = ((T + 1 - 2 * h + h * (h - 1) / T) / T) ** (0.5)
-    DM_stat = harvey_adj * (V_d ** (-0.5) * np.mean(d))
-    p_value = 2 * t.cdf(-abs(DM_stat), df=T - 1)
-    return DM_stat, p_value
 
 
 if __name__ == "__main__":
     path_tsa = os.getcwd()
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M_no_epu'
     file = '\*.csv'
 
     data_list_tsa = glob.glob(path_tsa + file)
@@ -124,6 +154,9 @@ if __name__ == "__main__":
 
     data_list_ml = glob.glob(path_ml + file)
     for data in data_list_ml:
+        print('--------------------------------------')
         print(data)
-        print(r2_oos_func(data, type='ml'))
+        result = r2_oos_func(data, type='ml')
+        print(result[0])
+        # print(result[1])
 
