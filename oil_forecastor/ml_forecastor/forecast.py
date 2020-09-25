@@ -231,6 +231,13 @@ class MLForecast():
         linear_regressor = LinearRegression()
         pcr_scores = []
 
+        if n_features == 0:
+            X_train, X_test, y_train, y_test = train_test
+            linear_regressor = LinearRegression()
+            linear_regressor.fit(X_train, y_train)
+            y_pred = linear_regressor.predict(X_test)
+            return y_pred
+
         pca = PCA(random_state=self.random_state)
         X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
         for i in n_components:
