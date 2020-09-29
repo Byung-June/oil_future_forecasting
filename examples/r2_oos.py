@@ -8,7 +8,7 @@ import os
 
 
 
-def db_test(true, pred1, pred2, h, err_type='MSE'):
+def dm_test(true, pred1, pred2, h, err_type='MSE'):
     assert (len(true) == len(pred1)) and (len(true) == len(pred2)), print('check length')
     true = np.array(true)
     pred1 = np.array(pred1)
@@ -27,8 +27,8 @@ def db_test(true, pred1, pred2, h, err_type='MSE'):
         raise TypeError
 
     def auto_covariance(dd, length, lag):
-        return np.sum([((dd[i + lag]) - np.mean(dd)) * (dd[i] - np.mean(dd))
-                       for i in np.arange(0, length-lag)]) \
+        return np.sum([((dd[t]) - np.mean(dd)) * (dd[t - lag] - np.mean(dd))
+                       for t in np.arange(lag + 1, length + 1)]) \
                / float(length)
 
     T = float(len(d))
@@ -83,7 +83,7 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
     bench = pd.read_csv(bench, index_col=1).drop(columns=['Unnamed: 0'])
     bench = bench.iloc[:, 0]
     assert (len(y_test) == len(bench)), print('check benchmark file time')
-    db_result = db_test(y_test, bench, y_pred, h=1, err_type='MSE')[1]
+    d_result = dm_test(y_test, bench, y_pred, h=1, err_type='MSE')[1]
 
     y_t = y_test.shift(1)
     pt_y = y_test - y_t
@@ -145,7 +145,7 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
         time,
         np.round(r2_oos, 3),
         (np.round(p_hat, 3), np.round(pt_p_value, 3)),
-        np.round(db_result, 3),
+        np.round(d_result, 3),
         unit_root_test
     )
 
