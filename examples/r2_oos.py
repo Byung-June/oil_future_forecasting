@@ -28,7 +28,7 @@ def dm_test(true, pred1, pred2, h, err_type='MSE'):
 
     def auto_covariance(dd, length, lag):
         return np.sum([((dd[t]) - np.mean(dd)) * (dd[t - lag] - np.mean(dd))
-                       for t in np.arange(lag + 1, length + 1)]) \
+                       for t in np.arange(lag, length)]) \
                / float(length)
 
     T = float(len(d))
@@ -223,8 +223,8 @@ if __name__ == "__main__":
     print('Machine Learning with EPU')
     print('--------------------------------------')
 
-    path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
+    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
     data_list_ml = glob.glob(path_ml + file)
     for data in data_list_ml:
         print('--------------------------------------')
@@ -239,8 +239,8 @@ if __name__ == "__main__":
     print('Machine Learning without EPU')
     print('--------------------------------------')
 
-    path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M_no_epu'
     data_list_ml = glob.glob(path_ml + file)
     for data in data_list_ml:
         print('--------------------------------------')
