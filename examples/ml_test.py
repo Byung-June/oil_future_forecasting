@@ -29,7 +29,7 @@ parser.add_argument('--n-samples', default=5, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/vol_ml_data_M.csv', type=str,
+                    default='../data/rvol_ml_data_M.csv', type=str,
                     help='path to the data which is unfiltered')
 arguments = parser.parse_args()
 
