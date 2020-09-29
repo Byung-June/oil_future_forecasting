@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import glob
 from sklearn.metrics import r2_score
-from scipy.stats import t
+from scipy.stats import t, norm
 from statsmodels.tsa.stattools import adfuller
 import os
 
@@ -59,7 +59,7 @@ def pt_test(true, pred):
                  + 4 / np.power(n, 2) * P_hat_y * P_hat_x * (1 - P_hat_y) * (1 - P_hat_x)
 
     pt_stat = (P_hat - P_hat_star) / np.sqrt(V_hat - V_hat_star)
-    p_value = t.cdf(-abs(pt_stat), df=n - 1)
+    p_value = 1 - norm.cdf(pt_stat)
     return P_hat, p_value
 
 
@@ -79,11 +79,11 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
     unit_root_test = [adfuller(y_pred - y_test)[1]]
 
     # only for w=5, s=5
-    bench = os.getcwd() + '/vol_arima_M_5_5_0.csv'
+    bench = os.getcwd() + '/logvol_arima_W_5_5_0.csv'
     bench = pd.read_csv(bench, index_col=1).drop(columns=['Unnamed: 0'])
     bench = bench.iloc[:, 0]
-    assert (len(y_test) == len(bench)), print('check benchmark file time')
-    d_result = dm_test(y_test, bench, y_pred, h=1, err_type='MSE')[1]
+    # assert (len(y_test) == len(bench)), print('check benchmark file time')
+    # d_result = dm_test(y_test, bench, y_pred, h=1, err_type='MSE')[1]
 
     y_t = y_test.shift(1)
     pt_y = y_test - y_t
@@ -128,7 +128,7 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
                 time.append(y_test.index[0])
 
     if test_type == 'ladder':
-        for n_dates in [120, 60, 36, 24, 12]:
+        for n_dates in (np.array([10, 5, 3, 2, 1]) * 52):
             y_pred = data_.iloc[-n_dates:, 0]
             y_test = data_.iloc[-n_dates:, 1]
             r2_oos.append(r2_score(y_test, y_pred))
@@ -145,7 +145,7 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
         time,
         np.round(r2_oos, 3),
         (np.round(p_hat, 3), np.round(pt_p_value, 3)),
-        np.round(d_result, 3),
+        # np.round(d_result, 3),
         unit_root_test
     )
 
@@ -197,9 +197,6 @@ def evaluation(df, y_true, delete_outlier=False):
     return r2_score(y_test, y_pred), r2_true
 
 
-
-
-
 if __name__ == "__main__":
     path_tsa = os.getcwd()
     file = '\*.csv'
@@ -219,34 +216,34 @@ if __name__ == "__main__":
         print(result[2])
         print(result[3])
 
-    print('--------------------------------------')
-    print('Machine Learning with EPU')
-    print('--------------------------------------')
-
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
-    data_list_ml = glob.glob(path_ml + file)
-    for data in data_list_ml:
-        print('--------------------------------------')
-        print(data)
-        result = r2_oos_func(data, type='ml', test_type=test_type)
-        print(result[0])
-        print(result[1])
-        print(result[2])
-        print(result[3])
-
-    print('--------------------------------------')
-    print('Machine Learning without EPU')
-    print('--------------------------------------')
-
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    data_list_ml = glob.glob(path_ml + file)
-    for data in data_list_ml:
-        print('--------------------------------------')
-        print(data)
-        result = r2_oos_func(data, type='ml', test_type=test_type)
-        print(result[0])
-        print(result[1])
-        print(result[2])
-        print(result[3])
+    # print('--------------------------------------')
+    # print('Machine Learning with EPU')
+    # print('--------------------------------------')
+    #
+    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
+    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M'
+    # data_list_ml = glob.glob(path_ml + file)
+    # for data in data_list_ml:
+    #     print('--------------------------------------')
+    #     print(data)
+    #     result = r2_oos_func(data, type='ml', test_type=test_type)
+    #     print(result[0])
+    #     print(result[1])
+    #     print(result[2])
+    #     print(result[3])
+    #
+    # print('--------------------------------------')
+    # print('Machine Learning without EPU')
+    # print('--------------------------------------')
+    #
+    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    # data_list_ml = glob.glob(path_ml + file)
+    # for data in data_list_ml:
+    #     print('--------------------------------------')
+    #     print(data)
+    #     result = r2_oos_func(data, type='ml', test_type=test_type)
+    #     print(result[0])
+    #     print(result[1])
+    #     print(result[2])
+    #     print(result[3])

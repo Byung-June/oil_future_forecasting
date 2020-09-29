@@ -8,10 +8,7 @@ from ml_data_preprocessing.make_data import make_data
 from oil_forecastor.model_selection._utility import rolling_train_test_split, denoising_func
 import copy
 from sklearn.metrics import r2_score
-from tsfilt import (
-    BoxFilter, GaussianFilter, BilateralFilter, IdenticalFilter, NonLocalMeanFilter
-)
-import itertools
+
 
 
 def read_data_url(url, sheet_name_list, col_name_list, freq='D'):
@@ -53,11 +50,12 @@ def column_fill_name(columns, new_columns):
     return new_columns
 
 
-def resample_df(df_, freq='W'):
+def resample_df(df_, freq='W', method='last'):
     df_2 = copy.deepcopy(df_)
-    df_2['ddd'] = df_.index
-    df_2 = df_2.resample(freq).last()
-    df_2 = df_2.set_index('ddd')
+    if method == 'sum':
+        df_2 = df_2.resample(freq).sum()
+    else:
+        df_2 = df_2.resample(freq).last()
     return df_2
 
 
@@ -127,13 +125,10 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_d = future_rolling(df_d, method='productive').dropna()
     df_d = df_d[df_d['y_test'] > 0]
 
-    # resampling frequency before making return
-    # if freq == 'W':
-    #     df_d = resample_df(df_d)
     b_index = df_d.index
 
     df_y = df_d.iloc[:, [0]].shift(-1)
-    print(111, df_y)
+
     if filter in [None, 'moving_average']:
         df_y = denoising_func(df_y, filter=filter)
         if y_type=='return':
@@ -141,56 +136,27 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         elif y_type=='price_diff':
             df_y['y_test'] = df_y['y_test'].diff()
         elif y_type == 'sharpe':
-            df_y['y_test'] = df_y['y_test'].pct_change() / (df_y['y_test'].rolling(22).std() / np.sqrt(22))
+            df_y['y_test'] = df_y['y_test'].pct_change() / (df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22))
         elif y_type == 'vol':
             if freq == 'W':
                 df_y['y_test'] = df_y['y_test'].rolling(5).std() / np.sqrt(5)
             if freq == 'M':
                 df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
+        elif y_type == 'logvol':
+            df_y['y_test'] = np.square(100 * np.log(df_y['y_test']).diff())
         elif y_type == 'rvol':
-            if freq == 'W':
-                df_y['y_test'] = df_y['y_test'].pct_change().rolling(5).std() / np.sqrt(5)
-            if freq == 'M':
-                df_y['y_test'] = df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22)
+            df_y['y_test'] = np.square(df_y['y_test'].pct_change())
         else:
             df_y['y_test'] = df_y['y_test']
 
         if freq == 'W':
-            df_y = resample_df(df_y, freq='W')
+            df_y = resample_df(df_y, freq='W', method='sum')
         if freq == 'M':
-            df_y = resample_df(df_y, freq='M')
+            df_y = resample_df(df_y, freq='M', method='sum')
         b_index = df_y.index
 
-    elif filter == 'bilateral':
-        print('std', np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        # filt = GaussianFilter(bi_w)
-        filt = BilateralFilter(bi_w, sigma_d=bi_sig_d, sigma_i=bi_sig_i * np.std(df_y['y_test'][~df_y['y_test'].isna()].values))
-        df_y['y_test'] = filt.fit_transform(df_y['y_test'].values)
-        if y_type=='return':
+        if y_type == 'M_return':
             df_y['y_test'] = df_y['y_test'].pct_change()
-        elif y_type=='price_diff':
-            df_y['y_test'] = df_y['y_test'].diff()
-        elif y_type == 'sharpe':
-            df_y['y_test'] = df_y['y_test'].pct_change() / df_y['y_test'].rolling(22).std()
-        elif y_type=='vol':
-            if freq == 'W':
-                df_y['y_test'] = df_y['y_test'].rolling(5).std() / np.sqrt(5)
-            if freq == 'M':
-                df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
-        elif y_type=='rvol':
-            if freq == 'W':
-                df_y['y_test'] = df_y['y_test'].pct_change().rolling(5).std() / np.sqrt(5)
-            if freq == 'M':
-                df_y['y_test'] = df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22)
-        else:
-            df_y['y_test'] = df_y['y_test']
-
-        if freq == 'W':
-            df_y = resample_df(df_y, freq='W')
-        if freq == 'M':
-            df_y = resample_df(df_y, freq='M')
-        b_index = df_y.index
-
     else:
         pass
 
@@ -294,8 +260,10 @@ if __name__ == '__main__':
     # gen_data(filename='return_filter_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='return')
 
     # gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')
+    # gen_data(filename='logvol_ml_data_D.csv', freq='D', filter=None, y_type='logvol')
+    gen_data(filename='logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
     # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='vol')
-    gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='rvol')
+    # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='rvol')
     # b = [3]
     # d = [20]
     # i = [50]
@@ -318,6 +286,6 @@ if __name__ == '__main__':
     # gen_data(filename='2price_bi_ml_data_D.csv', freq='D', filter='bilateral', y_type='price')
     # gen_data(filename='price_wl_ml_data_D.csv', freq='D', filter='wavelet_db1', y_type='price')
 
-    # gen_data(filename='sharpe_ml_data_D.csv', freq='D', filter=None, y_type='sharpe')
+    # gen_data(filename='sharpe_ml_data_M.csv', freq='M', filter=None, y_type='sharpe')
     # gen_data(filename='sharpe_ml_data_D.csv', freq='D', filter='bilateral', y_type='sharpe')
 
