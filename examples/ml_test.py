@@ -13,12 +13,10 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/vol_ml_data_M.csv', type=str,
+    default='../data/rvol_ml_data_M.csv', type=str,
     help="path to data"
 )
-parser.add_argument(
-    '--without-epu', default=False, action='store_true'
-)
+parser.add_argument('--without-epu', type=bool)
 parser.add_argument('--filter-method',
                     default='none', type=str)
 parser.add_argument('--ignore-warnings', default=True, action='store_false')
