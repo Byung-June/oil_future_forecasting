@@ -97,7 +97,7 @@ def _shape_manager(data):
 
 class MLForecast():
     def __init__(self, data, n_windows, n_samples,
-                 start_time, end_time, scaler):
+                 start_time, end_time, scaler, random_state=0):
         self.data = data
         self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
@@ -106,6 +106,7 @@ class MLForecast():
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
         self.scaler = scaler
+        self.random_state = random_state
 
     def _scaler(self, X_train, y_train, index,
                 method='robust'):
@@ -171,7 +172,7 @@ class MLForecast():
     def lasso(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
-            Lasso(max_iter=3000, tol=5e-2, selection='random'),
+            Lasso(max_iter=3000, tol=1e-2, random_state=self.random_state),
             verbose=self.verbose,
             param_grid={"alpha": np.logspace(-3, 2, 15)},
             scoring='neg_mean_squared_error', n_jobs=n_cpus
@@ -230,7 +231,14 @@ class MLForecast():
         linear_regressor = LinearRegression()
         pcr_scores = []
 
-        pca = PCA()
+        if n_features == 0:
+            X_train, X_test, y_train, y_test = train_test
+            linear_regressor = LinearRegression()
+            linear_regressor.fit(X_train, y_train)
+            y_pred = linear_regressor.predict(X_test)
+            return y_pred
+
+        pca = PCA(random_state=self.random_state)
         X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
         for i in n_components:
             pcr_score = cross_val_score(
@@ -299,7 +307,7 @@ class MLForecast():
     def decision_tree_reg(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         dtr_gridsearch = GridSearchCV(
-            DecisionTreeRegressor(),
+            DecisionTreeRegressor(random_state=self.random_state),
             verbose=self.verbose,
             param_grid={
                 "max_depth": [2, 3, 5, 10, 15, 20],
@@ -319,7 +327,7 @@ class MLForecast():
     def rand_forest_reg(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         rfr_gridsearch = GridSearchCV(
-            RandomForestRegressor(),
+            RandomForestRegressor(random_state=self.random_state),
             verbose=self.verbose, param_grid={
                 'n_estimators': [200],
                 "max_depth": [2, 5, 10],
@@ -339,7 +347,7 @@ class MLForecast():
     def grad_boost_reg(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         dtr_gridsearch = GridSearchCV(
-            GradientBoostingRegressor(),
+            GradientBoostingRegressor(random_state=self.random_state),
             verbose=self.verbose,
             param_grid={
                 "learning_rate": [0.1, 0.2, 0.3],
