@@ -22,9 +22,10 @@ import pmdarima as pm
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
+from sklearn.exceptions import DataConversionWarning
 
-warnings.filterwarnings('ignore')
-
+# warnings.filterwarnings('ignore')
+warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
@@ -67,7 +68,8 @@ def rolling(func):
         for i, time_idx in enumerate(tqdm(sample_date)):
             if time_idx < self.start_time:
                 continue
-            train_test = self._data_helper(i, n_features, method)
+            train_test, y_transformer = self._data_helper(i, n_features,
+                                                          method)
             train_test, diff_order = auto_diff(train_test)
             y_train = train_test[-2]
             y_test = train_test[-1].reshape(-1, 1)
@@ -75,6 +77,10 @@ def rolling(func):
             d_y_pred = func(self, train_test, n_features, method)
             d_y_pred = d_y_pred.reshape(1, 1)
             y_pred = recover(i, diff_order, d_y_pred, y_train)
+
+            if self.scaler != 'none':
+                y_test = y_transformer.inverse_transform(y_test)
+                y_pred = y_transformer.inverse_transform(y_pred)
 
             df['y_test'].iloc[i+1] = y_test.flatten()
             df['y_pred'].iloc[i+1] = y_pred
@@ -98,7 +104,8 @@ def _shape_manager(data):
 
 class MLForecast():
     def __init__(self, data, n_windows, n_samples,
-                 start_time, end_time, scaler, random_state=0):
+                 start_time, end_time, scaler, n_columns,
+                 random_state=0):
         self.data = data
         self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
@@ -107,15 +114,18 @@ class MLForecast():
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
         self.scaler = scaler
+        self.n_columns = n_columns
         self.random_state = random_state
 
     def _scaler(self, X_train, y_train, index,
                 method='robust'):
         if method == 'robust':
             X_transformer = RobustScaler().fit(X_train[:, index])
+            y_transformer = RobustScaler().fit(y_train)
         elif method == 'none':
             X_transformer = None
-        return X_transformer
+            y_transformer = None
+        return X_transformer, y_transformer
 
     def _data_helper(self, time_idx, n_features, method):
         data_tuple = rolling_train_test_split(self.data,
@@ -125,7 +135,8 @@ class MLForecast():
         X_train_ = np.stack([elt.values for elt in data_tuple[0]], axis=-1)
         X_test_ = np.expand_dims(data_tuple[1].values, axis=-1)
         X_train_lagged, X_train_exo, X_test_lagged, X_test_exo\
-            = lagged_features_extractor(X_train_, X_test_)
+            = lagged_features_extractor(X_train_, X_test_,
+                                        num_lagged=self.n_columns)
 
         X_train_lagged = _shape_manager(X_train_lagged)
         X_train_exo = _shape_manager(X_train_exo)
@@ -134,9 +145,9 @@ class MLForecast():
         y_train = np.array(data_tuple[2]).reshape(-1, 1)
         y_test = np.array(data_tuple[3]).reshape(1, 1)
 
-        std = X_train_exo.std(axis=0) > 1000
-        X_transformer = self._scaler(X_train_exo, y_train, std,
-                                     method=self.scaler)
+        std = X_train_exo.std(axis=0) > 0.0
+        X_transformer, y_transformer = self._scaler(X_train_exo, y_train, std,
+                                                    method=self.scaler)
 
         X_train_exo_scaled = X_train_exo
         X_test_exo_scaled = X_test_exo
@@ -145,21 +156,28 @@ class MLForecast():
                 = X_transformer.transform(X_train_exo[:, std])
             X_test_exo_scaled[:, std]\
                 = X_transformer.transform(X_test_exo[:, std])
+            y_train_scaled = y_transformer.transform(y_train)
+            y_test_scaled = y_transformer.transform(y_test)
         else:
             X_train_exo_scaled = X_train_exo
             X_test_exo_scaled = X_test_exo
+            y_train_scaled = y_train
+            y_test_scaled = y_test
 
         if n_features < np.inf:
-            X_train_exo_scaled, X_test_exo_scaled, y_train, y_test\
+            (X_train_exo_scaled, X_test_exo_scaled,
+             y_train_scaled, y_test_scaled)\
                 = selector(X_train_exo_scaled, X_test_exo_scaled,
-                           y_train, y_test,
+                           y_train_scaled, y_test_scaled,
                            n_features, method)
-        y_train, y_test = y_train.flatten(), y_test.flatten()
+        y_train_scaled, y_test_scaled\
+            = y_train_scaled.flatten(), y_test_scaled.flatten()
         X_train_scaled = np.concatenate([X_train_lagged, X_train_exo_scaled],
                                         axis=-1)
         X_test_scaled = np.concatenate([X_test_lagged, X_test_exo_scaled],
                                        axis=-1)
-        return X_train_scaled, X_test_scaled, y_train, y_test
+        return (X_train_scaled, X_test_scaled, y_train_scaled, y_test_scaled),\
+            y_transformer
 
     @rolling
     def linear_reg(self, train_test, n_features=np.inf, method=None):
