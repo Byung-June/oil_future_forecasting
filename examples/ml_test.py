@@ -13,7 +13,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/rvol_ml_data_M.csv', type=str,
+    default='../data/logvol_har_ml_data_W.csv', type=str,
     help="path to data"
 )
 parser.add_argument('--without-epu', type=bool)
@@ -29,12 +29,12 @@ parser.add_argument('--n-samples', default=5, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/rvol_ml_data_M.csv', type=str,
+                    default='../data/logvol_har_ml_data_W.csv', type=str,
                     help='path to the data which is unfiltered')
 arguments = parser.parse_args()
 
 if arguments.scaler != 'none':
-    print("The model uses scaler and performance could drop. Are you sure?")
+    print("The model uses scaler and the performance could drop. Are you sure?")
     get_str = input().lower()
     if get_str in ['yes', 'y']:
         print("Using {} scaler".format(arguments.scaler))
