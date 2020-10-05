@@ -10,7 +10,7 @@ import copy
 # %%
 
 class GenModel:
-    def __init__(self, data_, window_num, sample_num, forecast_period, feature_num, denoise=None):
+    def __init__(self, data_, window_num, sample_num, forecast_period, feature_num, denoise=None, fix_feature_num=0):
         """
         :param data_:
         :param window_num:
@@ -34,6 +34,7 @@ class GenModel:
         self._sample_num = sample_num
         self._forecast_period = forecast_period
         self._feature_num = feature_num
+        self._fix_feature_num = fix_feature_num
         self._model = None
 
     def gen_model(self, model, process_num=4):
@@ -67,7 +68,8 @@ class GenModel:
         if self._model == 'arima':
             return arima(
                 x_train_, x_test_, y_train_, y_test_,
-                self._data.index[t_+1], self._forecast_period, self._feature_num
+                self._data.index[t_+1], self._forecast_period, self._feature_num,
+                fix_feature_num=self._fix_feature_num
             )
 
         elif self._model in garch_models:
@@ -86,9 +88,13 @@ if __name__ == '__main__':
     ######
     # data = pd.read_csv('../data_preprocessing/bi_vol_ml_data_M_w3_d10_i10.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_M_no_epu.csv', index_col=0)
+    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
     data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
-    data = data.drop(['crude_future_daily_lag0',
-                      ], axis=1)
+    fix_feature_num = 3
+    try:
+        data = data.drop(['crude_future_daily_lag0'], axis=1)
+    except KeyError:
+        pass
     print(data)
     import warnings
 
@@ -96,15 +102,9 @@ if __name__ == '__main__':
 
     wsf_list = [
         # [5, 5, 0],
-        # [5, 5, 10],
-        # [4, 4, 0],
-        # [4, 12, 0],
-        # [12, 24, 0],
-        # [12, 50, 0],
-        [5, 6, 0],
-        [5, 7, 0],
-        [4, 5, 0],
-        [4, 6, 0]
+        [5, 5, 3],
+        [5, 5, 10],
+        [5, 5, 50],
     ]
 
     for w, s, f in wsf_list:
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         input_s = s
         input_f = f
         g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
-                     denoise=None)
+                     denoise=None, fix_feature_num=fix_feature_num)
         arma = pd.DataFrame(g.gen_model('arima', process_num=4))
         # arma.to_csv('rvol_arima_W_%s_%s_%s_no_epu.csv' % (input_w, input_s, input_f))
         arma.to_csv('logvol_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))

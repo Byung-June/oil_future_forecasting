@@ -13,7 +13,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/rvol_ml_data_M.csv', type=str,
+    default='../data/test2_W.csv', type=str,
     help="path to data"
 )
 parser.add_argument('--without-epu', type=bool)
@@ -29,7 +29,7 @@ parser.add_argument('--n-samples', default=5, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/rvol_ml_data_M.csv', type=str,
+                    default='../data/test2_W.csv', type=str,
                     help='path to the data which is unfiltered')
 arguments = parser.parse_args()
 
@@ -79,44 +79,64 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(n_features=n_features,
                                             method=arguments.selector)
-    r2_test, r2_true = evaluation(res_linear_reg, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    r2_test, r2_true, mape = evaluation(res_linear_reg, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
     name_lin_reg = make_name("res_linear_reg", csv_name,
                              sw_tuple, n_features, arguments)
     res_linear_reg.to_csv(name_lin_reg + ".csv")
 
-    print("lasso")
-    res_lasso = ml_forecast.lasso(n_features=n_features,
-                                  method=arguments.selector)
-    r2_test, r2_true = evaluation(res_lasso, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lasso_reg\
-        = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
-    res_lasso.to_csv(name_lasso_reg + ".csv")
-
-    print("pcr")
-    res_pcr = ml_forecast.pcr(n_features=n_features,
-                              method=arguments.selector)
-    r2_test, r2_true = evaluation(res_pcr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    name_lin_reg = make_name("res_pcr", csv_name,
+    print("arima")
+    res_pipe = ml_forecast.arima(n_features=n_features,
+                                    method=arguments.selector)
+    r2_test, r2_true, mape = evaluation(res_pipe, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    name_lin_reg = make_name("arima", csv_name,
                              sw_tuple, n_features, arguments)
-    res_pcr.to_csv(name_lin_reg + ".csv")
+    res_pipe.to_csv(name_lin_reg + ".csv")
+    # #
+    # print("pipe")
+    # res_pipe = ml_forecast.pipeline(n_features=n_features,
+    #                                 method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_pipe, y_true)
+    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    # name_lin_reg = make_name("res_pipe", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_pipe.to_csv(name_lin_reg + ".csv")
 
     print("dtr")
     res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
                                             method=arguments.selector)
-    r2_test, r2_true = evaluation(res_dtr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
     name_lin_reg = make_name("res_dtr", csv_name,
                              sw_tuple, n_features, arguments)
     res_dtr.to_csv(name_lin_reg + ".csv")
 
+    # print("lasso")
+    # res_lasso = ml_forecast.lasso(n_features=n_features,
+    #                               method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_lasso, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lasso_reg\
+    #     = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
+    # res_lasso.to_csv(name_lasso_reg + ".csv")
+
+    print("pcr")
+    res_pcr = ml_forecast.pcr(n_features=n_features,
+                              method=arguments.selector)
+    r2_test, r2_true, mape = evaluation(res_pcr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    name_lin_reg = make_name("res_pcr", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_pcr.to_csv(name_lin_reg + ".csv")
+
+
+
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg(n_features=n_features,
                                           method=arguments.selector)
-    r2_test, r2_true = evaluation(res_rfr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    r2_test, r2_true, mape = evaluation(res_rfr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
     name_lin_reg = make_name("res_rfr", csv_name,
                              sw_tuple, n_features, arguments)
     res_rfr.to_csv(name_lin_reg + ".csv")
@@ -124,8 +144,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     print("gbr")
     res_gbr = ml_forecast.grad_boost_reg(n_features=n_features,
                                          method=arguments.selector)
-    r2_test, r2_true = evaluation(res_gbr, y_true)
-    print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
+    r2_test, r2_true, mape = evaluation(res_gbr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
     name_lin_reg = make_name("res_gbr", csv_name,
                              sw_tuple, n_features, arguments)
     res_gbr.to_csv(name_lin_reg + ".csv")
@@ -180,8 +200,8 @@ if __name__ == '__main__':
             print(e)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [np.inf, 50, 10, 0]:
-                for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
+            for n_features in [np.inf, 0, 10, 50]:
+                for sw_tuple in [(5, 5)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)

@@ -18,6 +18,7 @@ from sklearn.kernel_ridge import KernelRidge
 from ..model_selection import rolling_train_test_split
 from ..feature_selection import selector
 # from ..model_selection._utility import adf_test
+import pmdarima as pm
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
@@ -365,32 +366,82 @@ class MLForecast():
         # y_pred = gbr.predict(X_test)
         return y_pred
 
+    def arima_pipe(self, train_test, n_features=0):
+        if n_features > 50:
+            n_features = 0
+        X_train, X_test, y_train, y_test = train_test
+        d_ = 0
+        if n_features > 0:
+            arima_train = pm.auto_arima(y_train, exogenous=X_train, d=d_,
+                                        seasonal=False, with_intercept=True, information_criterion='bic', trace=False,
+                                        suppress_warnings=True, stepwise=False, error_action='ignore')
+            y_pred = arima_train.predict(n_periods=1, exogenous=X_test)
+        else:
+            arima_train = pm.auto_arima(y_train, d=d_,
+                                        seasonal=False, with_intercept=True, information_criterion='bic', trace=False,
+                                        suppress_warnings=True, stepwise=False, error_action='ignore')
+            y_pred = arima_train.predict(n_periods=1)
+        residual = arima_train.resid()
+        return y_pred, residual
+
+
     @rolling
-    def pipeline(self, train_test, n_features=np.inf, method=None):
+    def pipeline(self, train_test, n_features=0, method=None):
         X_train, X_test, y_train, y_test = train_test
 
-        lb = y_train.mean() - 3 * np.std(y_train)
-        ub = y_train.mean() + 3 * np.std(y_train)
+        # lin_reg = LinearRegression()
+        # lin_reg.fit(X_train, y_train)
+        # y_pred_train = lin_reg.predict(X_train)
 
-        lin_reg = ARDRegression()
-        lin_reg.fit(X_train[:, :self.n_windows], y_train)
-        y_pred_train = lin_reg.predict(X_train[:, :self.n_windows])
-        y_pred_train = np.clip(y_pred_train, lb, ub)
+        y_pred, residual = self.arima_pipe(train_test, n_features=n_features)
 
-        residual = y_train - y_pred_train
+        # residual = y_train - y_pred_train
         residual = np.expand_dims(residual, axis=-1)
 
-        X_train = np.concatenate([X_train[1:, :], residual[:-1, :]],
-                                 axis=-1)
-
         rfr = RandomForestRegressor()
-        rfr.fit(X_train[:, self.n_windows:], residual[1:, :].flatten())
+        rfr.fit(X_train, residual.flatten())
 
-        y_pred_lin_reg = lin_reg.predict(X_test[:, :self.n_windows])
-        y_pred_lin_reg = np.clip(y_pred_lin_reg, lb, ub)
-
-        X_test = np.concatenate([X_test[:, self.n_windows:],
-                                 residual[-1:, :]],
-                                axis=-1)
+        # y_pred = lin_reg.predict(X_test)
         residual_pred = rfr.predict(X_test)
-        return y_pred_lin_reg + residual_pred
+        return y_pred + residual_pred
+
+    @rolling
+    def pipeline_grid(self, train_test, n_features=0, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        y_pred, residual = self.arima_pipe(train_test, n_features=n_features)
+
+        residual = np.expand_dims(residual, axis=-1)
+
+        rfr_gridsearch = GridSearchCV(
+            RandomForestRegressor(random_state=self.random_state),
+            verbose=self.verbose, param_grid={
+                'n_estimators': [200],
+                "max_depth": [2, 5, 10],
+                "min_samples_split": [2, 4, 8],
+                "min_samples_leaf": [1, 2, 4]
+            },
+            scoring='neg_mean_squared_error', n_jobs=n_cpus
+        )
+        rfr_gridsearch.fit(X_train, residual.flatten())
+
+        # y_pred = lin_reg.predict(X_test)
+        residual_pred = rfr_gridsearch.predict(X_test)
+        return y_pred + residual_pred
+
+    @rolling
+    def arima(self, train_test, n_features=0, method=None):
+        if n_features > 50:
+            n_features = 0
+        X_train, X_test, y_train, y_test = train_test
+        d_ = 0
+        if n_features > 0:
+            arima_train = pm.auto_arima(y_train, exogenous=X_train, d=d_,
+                                        seasonal=False, with_intercept=True, information_criterion='bic', trace=False,
+                                        suppress_warnings=True, stepwise=False, error_action='ignore')
+            y_pred = arima_train.predict(n_periods=1, exogenous=X_test)
+        else:
+            arima_train = pm.auto_arima(y_train, d=d_,
+                                        seasonal=False, with_intercept=True, information_criterion='bic', trace=False,
+                                        suppress_warnings=True, stepwise=False, error_action='ignore')
+            y_pred = arima_train.predict(n_periods=1)
+        return y_pred
