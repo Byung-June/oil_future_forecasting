@@ -191,7 +191,7 @@ class MLForecast():
     def lasso(self, train_test, n_features=np.inf, method=None):
         X_train, X_test, y_train, y_test = train_test
         lasso_gridsearch = GridSearchCV(
-            Lasso(max_iter=10000, tol=1e-2, random_state=self.random_state),
+            Lasso(max_iter=100000, tol=1e-2, random_state=self.random_state),
             verbose=self.verbose,
             param_grid={"alpha": np.logspace(-3, 2, 15)},
             scoring='neg_mean_squared_error', n_jobs=n_cpus
