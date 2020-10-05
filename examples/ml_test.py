@@ -8,18 +8,19 @@ import warnings
 from oil_forecastor.model_selection import denoising_func
 from r2_oos import evaluation
 import sys
+from sklearn.exceptions import DataConversionWarning
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/logvol_har_ml_data_W.csv', type=str,
+    default='../data/logvol_ml_data_W.csv', type=str,
     help="path to data"
 )
 parser.add_argument('--without-epu', type=bool)
 parser.add_argument('--filter-method',
                     default='none', type=str)
-parser.add_argument('--ignore-warnings', default=True, action='store_false')
+parser.add_argument('--ignore-warnings', default=True, type=bool)
 parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
@@ -29,12 +30,15 @@ parser.add_argument('--n-samples', default=5, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/logvol_har_ml_data_W.csv', type=str,
+                    default='../data/logvol_har_data_W.csv', type=str,
                     help='path to the data which is unfiltered')
+parser.add_argument('--n-columns',
+                    default=2, type=int,
+                    help='# of first n-columns that must be included')
 arguments = parser.parse_args()
 
 if arguments.scaler != 'none':
-    print("The model uses scaler and the performance could drop. Are you sure?")
+    print("The model uses scaler. The performance could drop. Are you sure?")
     get_str = input().lower()
     if get_str in ['yes', 'y']:
         print("Using {} scaler".format(arguments.scaler))
@@ -46,7 +50,10 @@ else:
 
 
 if arguments.ignore_warnings:
-    warnings.filterwarnings('ignore')
+    print("Ignore sklearn warnings")
+    warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+else:
+    print("Do not ignore sklearn warnings")
 
 
 def make_name(name, csv_name, sw_tuple, n_features, args):
@@ -74,7 +81,8 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     end_time = len(filtered) - 1
 
     ml_forecast = MLForecast(
-        filtered, n_windows, n_samples, start_time, end_time, arguments.scaler)
+        filtered, n_windows, n_samples, start_time, end_time,
+        arguments.scaler, arguments.n_columns)
 
     print("linear_reg")
     res_linear_reg = ml_forecast.linear_reg(n_features=n_features,
@@ -133,7 +141,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
 
 if __name__ == '__main__':
     path = arguments.data_path
+    arguments.true_path = path
     if arguments.without_epu:
+        print("The model without epu. Are you sure?")
+        get_str = input().lower()
+        if get_str in ['yes', 'y']:
+            print("Proceed without EPU")
+        else:
+            print("Terminate")
+            sys.exit()
         path.replace('_with_epu', '-without_epu')
 
     y_true = None
@@ -161,6 +177,16 @@ if __name__ == '__main__':
             print(e)
         assert exogenous.columns[0] == 'y_test'
         assert exogenous.columns[1] == 'crude_future_daily_lag0'
+
+        if arguments.n_columns == 2:
+            exogenous.columns[2] == "crude_oil_realized_M"
+        elif arguments.n_columns == 3:
+            exogenous.columns[2] == "crude_oil_realized_M"
+            exogenous.columns[3] == "crude_oil_realized_Q"
+        elif arguments.n_columns > 3:
+            raise ValueError("Too many fixed columns ", arguments.n_columns)
+        else:
+            print("Using only one fixed ", arguments.n_columns)
 
         crude_future_columns = [elt for elt in exogenous.columns
                                 if 'crude_future' in elt]

@@ -21,11 +21,11 @@ from ..feature_selection import selector
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
+from sklearn.exceptions import DataConversionWarning
 
-warnings.filterwarnings('ignore')
-
+# warnings.filterwarnings('ignore')
+warnings.filterwarnings(action='ignore', category=DataConversionWarning)
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
-warnings.filterwarnings('ignore')
 
 
 def recover(i, diff_order, y_pred, y_test):
@@ -103,7 +103,8 @@ def _shape_manager(data):
 
 class MLForecast():
     def __init__(self, data, n_windows, n_samples,
-                 start_time, end_time, scaler, random_state=0):
+                 start_time, end_time, scaler, n_columns,
+                 random_state=0):
         self.data = data
         self.y_test = copy.deepcopy(self.data['y_test'])
         self.n_windows, self.n_samples = n_windows, n_samples
@@ -112,6 +113,7 @@ class MLForecast():
         self.end_time = pd.to_datetime(data.index[end_time])
         self.verbose = 0
         self.scaler = scaler
+        self.n_columns = n_columns
         self.random_state = random_state
 
     def _scaler(self, X_train, y_train, index,
@@ -132,7 +134,8 @@ class MLForecast():
         X_train_ = np.stack([elt.values for elt in data_tuple[0]], axis=-1)
         X_test_ = np.expand_dims(data_tuple[1].values, axis=-1)
         X_train_lagged, X_train_exo, X_test_lagged, X_test_exo\
-            = lagged_features_extractor(X_train_, X_test_)
+            = lagged_features_extractor(X_train_, X_test_,
+                                        num_lagged=self.n_columns)
 
         X_train_lagged = _shape_manager(X_train_lagged)
         X_train_exo = _shape_manager(X_train_exo)
