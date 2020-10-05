@@ -35,6 +35,7 @@ parser.add_argument('--true-path',
 parser.add_argument('--n-columns',
                     default=2, type=int,
                     help='# of first n-columns that must be included')
+parser.add_argument('--run-arima', default=False, type=bool)
 arguments = parser.parse_args()
 
 if arguments.scaler != 'none':
@@ -93,14 +94,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_linear_reg.to_csv(name_lin_reg + ".csv")
 
-    print("arima")
-    res_pipe = ml_forecast.arima(n_features=n_features,
-                                 method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_pipe, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("arima", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_pipe.to_csv(name_lin_reg + ".csv")
+    if arguments.run_arima:
+        print("arima")
+        res_pipe = ml_forecast.arima(n_features=n_features,
+                                    method=arguments.selector)
+        r2_test, r2_true, mape = evaluation(res_pipe, y_true)
+        print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+        name_lin_reg = make_name("arima", csv_name,
+                                sw_tuple, n_features, arguments)
+        res_pipe.to_csv(name_lin_reg + ".csv")
     # #
     # print("pipe")
     # res_pipe = ml_forecast.pipeline(n_features=n_features,
