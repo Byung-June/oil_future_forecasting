@@ -97,11 +97,11 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     if arguments.run_arima:
         print("arima")
         res_pipe = ml_forecast.arima(n_features=n_features,
-                                    method=arguments.selector)
+                                     method=arguments.selector)
         r2_test, r2_true, mape = evaluation(res_pipe, y_true)
         print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
         name_lin_reg = make_name("arima", csv_name,
-                                sw_tuple, n_features, arguments)
+                                 sw_tuple, n_features, arguments)
         res_pipe.to_csv(name_lin_reg + ".csv")
     # #
     # print("pipe")
@@ -112,15 +112,6 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     # name_lin_reg = make_name("res_pipe", csv_name,
     #                          sw_tuple, n_features, arguments)
     # res_pipe.to_csv(name_lin_reg + ".csv")
-
-    print("dtr")
-    res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
-                                            method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_dtr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_dtr.to_csv(name_lin_reg + ".csv")
 
     print("lasso")
     res_lasso = ml_forecast.lasso(n_features=n_features,
@@ -139,6 +130,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     name_lin_reg = make_name("res_pcr", csv_name,
                              sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
+
+    print("dtr")
+    res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
+                                            method=arguments.selector)
+    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    name_lin_reg = make_name("res_dtr", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_dtr.to_csv(name_lin_reg + ".csv")
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg(n_features=n_features,
