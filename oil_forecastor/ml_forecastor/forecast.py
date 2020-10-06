@@ -22,10 +22,9 @@ import pmdarima as pm
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
-from sklearn.exceptions import DataConversionWarning
+from sklearn.exceptions import ConvergenceWarning
 
-# warnings.filterwarnings('ignore')
-warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
