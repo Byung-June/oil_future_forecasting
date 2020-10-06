@@ -9,12 +9,13 @@ from oil_forecastor.model_selection import denoising_func
 from r2_oos import evaluation
 import sys
 from sklearn.exceptions import DataConversionWarning
+import glob
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/logvol_ml_data_W.csv', type=str,
+    default='../data', type=str,
     help="path to data"
 )
 parser.add_argument('--without-epu', type=bool)
@@ -160,28 +161,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
 
 
 if __name__ == '__main__':
-    path = arguments.data_path
-    arguments.true_path = path
-    if arguments.without_epu:
-        print("The model without epu. Are you sure?")
-        get_str = input().lower()
-        if get_str in ['yes', 'y']:
-            print("Proceed without EPU")
-        else:
-            print("Terminate")
-            sys.exit()
-        path.replace('_with_epu', '-without_epu')
-
-    y_true = None
-    if arguments.true_path != 'none':
+    paths = glob.glob(arguments.data_path + '/*.csv')
+    for path in paths:
+        arguments.true_path = path
         y_true = pd.read_csv(arguments.true_path)
         y_true = y_true.set_index('date')
         y_true.index = pd.DatetimeIndex(y_true.index)
         y_true = y_true['y_test']
         y_true = y_true.rename('y_true')
 
-    paths = [arguments.data_path]
-    for path in paths:
         exogenous = pd.read_csv(path)
         exogenous = exogenous.set_index('date')
         exogenous.index = pd.DatetimeIndex(exogenous.index)
@@ -226,9 +214,9 @@ if __name__ == '__main__':
             print(e)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [np.inf, 0, 1, 3, 10, 50]:
-                for sw_tuple in [(arguments.n_samples, arguments.n_windows),
-                                 (26, 1)]:
+            for sw_tuple in [(arguments.n_samples, arguments.n_windows),
+                             (26, 1)]:
+                for n_features in [np.inf, 0, 10, 50]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)
