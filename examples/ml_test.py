@@ -30,7 +30,7 @@ parser.add_argument('--n-samples', default=52, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/logvol_har_data_W.csv', type=str,
+                    default='../data/your_path.csv', type=str,
                     help='path to the data which is unfiltered')
 parser.add_argument('--n-columns',
                     default=2, type=int,
@@ -228,7 +228,7 @@ if __name__ == '__main__':
         for filter_method in [arguments.filter_method]:
             for n_features in [np.inf, 0, 1, 3, 10, 50]:
                 for sw_tuple in [(arguments.n_samples, arguments.n_windows),
-                                 (52, 5), (52, 15), (26, 5), (26, 15)]:
+                                 (26, 1)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)
