@@ -25,16 +25,17 @@ parser.add_argument('--use-unfiltered', default=False, action='store_true')
 parser.add_argument('--plot-test-data', default=False, action='store_true')
 parser.add_argument('--selected-inputs', default=True, action='store_false')
 parser.add_argument('--prefilter', default=False, type=bool)
-parser.add_argument('--n-windows', default=5, type=int)
-parser.add_argument('--n-samples', default=5, type=int)
+parser.add_argument('--n-windows', default=1, type=int)
+parser.add_argument('--n-samples', default=52, type=int)
 parser.add_argument('--selector', default='f-regression', type=str)
 parser.add_argument('--scaler', default='none', type=str)
 parser.add_argument('--true-path',
-                    default='../data/logvol_har_data_W.csv', type=str,
+                    default='../data/your_path.csv', type=str,
                     help='path to the data which is unfiltered')
 parser.add_argument('--n-columns',
                     default=2, type=int,
                     help='# of first n-columns that must be included')
+parser.add_argument('--run-arima', default=False, type=bool)
 arguments = parser.parse_args()
 
 if arguments.scaler != 'none':
@@ -93,14 +94,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_linear_reg.to_csv(name_lin_reg + ".csv")
 
-    print("arima")
-    res_pipe = ml_forecast.arima(n_features=n_features,
-                                    method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_pipe, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("arima", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_pipe.to_csv(name_lin_reg + ".csv")
+    if arguments.run_arima:
+        print("arima")
+        res_pipe = ml_forecast.arima(n_features=n_features,
+                                     method=arguments.selector)
+        r2_test, r2_true, mape = evaluation(res_pipe, y_true)
+        print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+        name_lin_reg = make_name("arima", csv_name,
+                                 sw_tuple, n_features, arguments)
+        res_pipe.to_csv(name_lin_reg + ".csv")
     # #
     # print("pipe")
     # res_pipe = ml_forecast.pipeline(n_features=n_features,
@@ -111,23 +113,14 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     #                          sw_tuple, n_features, arguments)
     # res_pipe.to_csv(name_lin_reg + ".csv")
 
-    print("dtr")
-    res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
-                                            method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
+    print("lasso")
+    res_lasso = ml_forecast.lasso(n_features=n_features,
+                                  method=arguments.selector)
+    r2_test, r2_true, mape = evaluation(res_lasso, y_true)
     print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_dtr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_dtr.to_csv(name_lin_reg + ".csv")
-
-    # print("lasso")
-    # res_lasso = ml_forecast.lasso(n_features=n_features,
-    #                               method=arguments.selector)
-    # r2_test, r2_true, mape = evaluation(res_lasso, y_true)
-    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    # name_lasso_reg\
-    #     = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
-    # res_lasso.to_csv(name_lasso_reg + ".csv")
+    name_lasso_reg\
+        = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
+    res_lasso.to_csv(name_lasso_reg + ".csv")
 
     print("pcr")
     res_pcr = ml_forecast.pcr(n_features=n_features,
@@ -138,7 +131,14 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
                              sw_tuple, n_features, arguments)
     res_pcr.to_csv(name_lin_reg + ".csv")
 
-
+    print("dtr")
+    res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
+                                            method=arguments.selector)
+    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
+    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    name_lin_reg = make_name("res_dtr", csv_name,
+                             sw_tuple, n_features, arguments)
+    res_dtr.to_csv(name_lin_reg + ".csv")
 
     print("rfr")
     res_rfr = ml_forecast.rand_forest_reg(n_features=n_features,
@@ -226,8 +226,9 @@ if __name__ == '__main__':
             print(e)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [np.inf, 0, 10, 50]:
-                for sw_tuple in [(5, 5)]:
+            for n_features in [np.inf, 0, 1, 3, 10, 50]:
+                for sw_tuple in [(arguments.n_samples, arguments.n_windows),
+                                 (26, 1)]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)
