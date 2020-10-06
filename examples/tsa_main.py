@@ -90,7 +90,8 @@ if __name__ == '__main__':
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_M_no_epu.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
     data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
-    fix_feature_num = 3
+    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W_no_Q.csv', index_col=0)
+    fix_feature_num = 2
     try:
         data = data.drop(['crude_future_daily_lag0'], axis=1)
     except KeyError:
@@ -101,10 +102,21 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     wsf_list = [
-        # [5, 5, 0],
-        [5, 5, 3],
+        [5, 5, 0],
+        [5, 5, 2],
         [5, 5, 10],
         [5, 5, 50],
+        [4, 8, 0],
+        [4, 13, 0],
+        [4, 26, 0],
+        [4, 52, 0],
+        [4, 52, 2],
+        [4, 52, 10],
+        [4, 52, 50],
+        [1,  52, 0],
+        [1, 52, 2],
+        [1, 52, 10],
+        [1, 52, 50]
     ]
 
     for w, s, f in wsf_list:
@@ -115,5 +127,6 @@ if __name__ == '__main__':
                      denoise=None, fix_feature_num=fix_feature_num)
         arma = pd.DataFrame(g.gen_model('arima', process_num=4))
         # arma.to_csv('rvol_arima_W_%s_%s_%s_no_epu.csv' % (input_w, input_s, input_f))
+        # arma.to_csv('logvol_arima_W_noQ_%s_%s_%s.csv' % (input_w, input_s, input_f))
         arma.to_csv('logvol_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
         print('result', arma)

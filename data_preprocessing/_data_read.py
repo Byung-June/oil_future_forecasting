@@ -53,10 +53,14 @@ def column_fill_name(columns, new_columns):
 
 def resample_df(df_, freq='W', method='last'):
     df_2 = copy.deepcopy(df_)
+    df_3 = copy.deepcopy(df_2.iloc[:, 0])
     if method == 'sum':
-        df_2 = df_2.resample(freq).sum()
+        df_2 = df_2.assign(date=df_.index).resample(freq).sum()
     else:
-        df_2 = df_2.resample(freq).last()
+        df_2 = df_2.assign(date=df_.index).resample(freq).last()
+    m = df_3.index.to_period(freq)
+    df_3 = df_3.reset_index().groupby(m).last().set_index('date')
+    df_2.index = df_3.index
     return df_2
 
 
@@ -125,69 +129,36 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_d = fill_bs_date(df_d.index, df_d)
     df_d = future_rolling(df_d, method='productive').dropna()
     df_d = df_d[df_d['y_test'] > 0]
+    df_d.index.name = 'date'
 
-    b_index = df_d.index
+    df_y = df_d.iloc[:, [0]]
+    df_y = denoising_func(df_y, filter=filter)
+    if y_type == 'logvol':
+        df_y['y_test'] = 100 * np.log(df_y['y_test']).diff()
+        df_y['cumulative_return'] = df_y['y_test']
+        df_y['y_test'] = np.square(df_y['y_test'])
 
-    df_y = df_d.iloc[:, [0]].shift(-1)
+    if freq == 'W':
+        df_y = resample_df(df_y, freq='W', method='sum')
+    if freq == 'M':
+        df_y = resample_df(df_y, freq='M', method='sum')
+    b_index = df_y.index
+    df_y['y_test'] = np.sqrt(df_y['y_test'])
+    df_y['cumulative_return'] = np.abs(df_y['cumulative_return'])
 
-    if filter in [None, 'moving_average']:
-        df_y = denoising_func(df_y, filter=filter)
-        if y_type == 'return':
-            df_y['y_test'] = df_y['y_test'].pct_change()
-        elif y_type == 'price_diff':
-            df_y['y_test'] = df_y['y_test'].diff()
-        elif y_type == 'sharpe':
-            df_y['y_test'] = df_y['y_test'].pct_change() / (df_y['y_test'].pct_change().rolling(22).std() / np.sqrt(22))
-        elif y_type == 'vol':
-            if freq == 'W':
-                df_y['y_test'] = df_y['y_test'].rolling(5).std() / np.sqrt(5)
-            if freq == 'M':
-                df_y['y_test'] = df_y['y_test'].rolling(22).std() / np.sqrt(22)
-        elif y_type == 'logvol':
-            df_y['y_test'] = 100 * np.log(df_y['y_test']).diff()
-            df_y['cumulative_return'] = df_y['y_test']
-            df_y['bpv'] = np.abs(df_y['y_test'] * df_y['y_test'].shift(1)) * (math.pi / 2) # * 5/3
-            df_y['tq'] = np.power(np.abs(df_y['y_test'] * df_y['y_test'].shift(2) * df_y['y_test'].shift(4)), 4 / 3) \
-                         / (4 * (gamma(7 / 6) / gamma(1 / 2)) ** 3) * 5 # 25/3
-            df_y['y_test'] = np.square(df_y['y_test'])
+    if freq == 'D':
+        df_y['crude_oil_realized_W'] = df_y['y_test'].rolling(5).mean()
+        df_y['crude_oil_realized_M'] = df_y['y_test'].rolling(22).mean()
+    if freq == 'W':
+        df_y['crude_oil_realized_M'] = df_y['y_test'].rolling(4).mean()
+        df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(13).mean()
 
-        elif y_type == 'rvol':
-            df_y['y_test'] = np.square(df_y['y_test'].pct_change())
-        else:
-            df_y['y_test'] = df_y['y_test']
+    df_y['crude_future_daily_lag0'] = df_y['y_test'].values
+    df_y['y_test'] = df_y['y_test'].shift(-1)
+    print('weekly realized vol', df_y)
 
-        if freq == 'W':
-            df_y = resample_df(df_y, freq='W', method='sum')
-        if freq == 'M':
-            df_y = resample_df(df_y, freq='M', method='sum')
-        ###
-        df_y['y_test'] = np.sqrt(df_y['y_test'])
-        ###
-        df_y['tq'] = ((math.pi / 2) ** 2 + math.pi - 5) \
-                     * np.maximum(df_y['tq'] / np.square(df_y['bpv']), np.ones(len(df_y)))
-        df_y['z_tq'] = (df_y['y_test'] - df_y['bpv']) / df_y['y_test'] / np.sqrt(df_y['tq'])
-        df_y['cumulative_return'] = np.abs(df_y['cumulative_return'])
-
-        if freq == 'D':
-            df_y['crude_oil_realized_W'] = df_y['y_test'].shift(1).rolling(5).mean()
-            df_y['crude_oil_realized_M'] = df_y['y_test'].shift(1).rolling(22).mean()
-        if freq == 'W':
-            df_y['crude_oil_realized_M'] = df_y['y_test'].shift(1).rolling(4).mean()
-            df_y['crude_oil_realized_Q'] = df_y['y_test'].shift(1).rolling(13).mean()
-
-        b_index = df_y.index
-
-        if y_type == 'M_return':
-            df_y['y_test'] = df_y['y_test'].pct_change()
-    else:
-        pass
-
-    df_y['crude_future_daily_lag0'] = df_y['y_test'].shift(1)
-
-    print(222, df_y)
-
-    col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
-    df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 1:], col_stationary_index, col_stationary_diff),
+    col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 5:])
+    df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 5:], col_stationary_index, col_stationary_diff),
                     left_index=True, right_index=True, how='outer')
     df_d = fill_bs_date(b_index, df_d)
 
@@ -249,34 +220,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         df_input = pd.merge(df_input.iloc[:, :6], df_x, left_index=True, right_index=True, how='outer')
 
     df_input.to_csv(filename)
-    r2 = 0
-    y_pred = df_input['y_test']
-
-    if y_type == 'return':
-        y_test = pd.read_csv('return_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    elif y_type == 'price':
-        y_test = pd.read_csv('price_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    elif y_type == 'price_diff':
-        y_test = pd.read_csv('price_diff_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    elif y_type == 'sharpe':
-        y_test = pd.read_csv('sharpe_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    elif y_type == 'vol':
-        y_test = pd.read_csv('vol_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    elif y_type == 'rvol':
-        y_test = pd.read_csv('rvol_ml_data_%s.csv' % freq)['y_test']
-        r2 = r2_score(y_test, y_pred)
-        print('r2', r2)
-    return df_input, r2
+    return df_input
 
 
 if __name__ == '__main__':

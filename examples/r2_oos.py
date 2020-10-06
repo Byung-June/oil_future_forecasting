@@ -92,7 +92,7 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
     p_hat = [pt_result[0]]
     pt_p_value = [pt_result[1]]
     time = []
-    step = 3
+    step = 5
     T = len(y_test) // step
 
 
@@ -201,8 +201,8 @@ def evaluation(df, y_true, delete_outlier=False):
 if __name__ == "__main__":
     path_tsa = os.getcwd()
     file = '\*.csv'
-    # test_type = 'ladder'
-    test_type = 'step'
+    test_type = 'ladder'
+    # test_type = 'step'
 
     print('--------------------------------------')
     print('ARIMAX')
@@ -218,11 +218,11 @@ if __name__ == "__main__":
         print(result[3])
 
     print('--------------------------------------')
-    print('Machine Learning with EPU')
+    print('Machine Learning with all')
     print('--------------------------------------')
 
     # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_har_ml_data_W'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\selected\logvol_ml_data_W'
     data_list_ml = glob.glob(path_ml + file)
     for data in data_list_ml:
         print('--------------------------------------')
@@ -234,11 +234,11 @@ if __name__ == "__main__":
         print(result[3])
 
     print('--------------------------------------')
-    print('Machine Learning without EPU')
+    print('Machine Learning without Q')
     print('--------------------------------------')
 
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_har_ml_data_W'
+    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\selected\logvol_ml_data_no_Q_W'
     data_list_ml = glob.glob(path_ml + file)
     for data in data_list_ml:
         print('--------------------------------------')
@@ -248,3 +248,19 @@ if __name__ == "__main__":
         print(result[1])
         print(result[2])
         print(result[3])
+
+    # print('--------------------------------------')
+    # print('Machine Learning without EPU')
+    # print('--------------------------------------')
+    #
+    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_har_ml_data_W'
+    # data_list_ml = glob.glob(path_ml + file)
+    # for data in data_list_ml:
+    #     print('--------------------------------------')
+    #     print(data)
+    #     result = r2_oos_func(data, type='ml', test_type=test_type)
+    #     print(result[0])
+    #     print(result[1])
+    #     print(result[2])
+    #     print(result[3])
