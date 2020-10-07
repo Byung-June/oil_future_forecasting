@@ -176,7 +176,7 @@ if __name__ == '__main__':
         assert exogenous.columns[0] == 'y_test'
         assert exogenous.columns[1] == 'crude_future_daily_lag0'
 
-        if '_no_Q_W' in path:
+        if '_no_Q' in path:
             print("Without quarterly")
             arguments.n_columns = 2
         else:
