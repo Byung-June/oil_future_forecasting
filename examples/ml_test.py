@@ -184,11 +184,11 @@ if __name__ == '__main__':
             arguments.n_columns = 3
 
         if arguments.n_columns == 2:
-            exogenous.columns[2] == "crude_oil_realized_M"
-            exogenous.columns[3] != "crude_oil_realized_Q"
+            assert exogenous.columns[2] == "crude_oil_realized_M"
+            assert exogenous.columns[3] != "crude_oil_realized_Q"
         elif arguments.n_columns == 3:
-            exogenous.columns[2] == "crude_oil_realized_M"
-            exogenous.columns[3] == "crude_oil_realized_Q"
+            assert exogenous.columns[2] == "crude_oil_realized_M"
+            assert exogenous.columns[3] == "crude_oil_realized_Q"
         elif arguments.n_columns > 3:
             raise ValueError("Too many fixed columns ", arguments.n_columns)
         else:
