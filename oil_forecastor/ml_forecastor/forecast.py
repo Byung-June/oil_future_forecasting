@@ -22,10 +22,9 @@ import pmdarima as pm
 import copy
 from sklearn.preprocessing import RobustScaler
 import warnings
-from sklearn.exceptions import DataConversionWarning
+from sklearn.exceptions import ConvergenceWarning
 
-# warnings.filterwarnings('ignore')
-warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 n_cpus = max(multiprocessing.cpu_count() - 2, 4)
 
 
@@ -258,11 +257,11 @@ class MLForecast():
             return y_pred
 
         pca = PCA(random_state=self.random_state)
-        X_train_reduced = pca.fit_transform(X_train[:, self.n_windows:])
+        X_train_reduced = pca.fit_transform(X_train[:, self.n_columns:])
         for i in n_components:
             pcr_score = cross_val_score(
                 linear_regressor,
-                np.concatenate([X_train[:, :self.n_windows],
+                np.concatenate([X_train[:, :self.n_columns],
                                 X_train_reduced[:, :i]],
                                axis=-1),
                 y_train,
@@ -274,13 +273,13 @@ class MLForecast():
         linear_regressor_pcr = LinearRegression()
 
         linear_regressor_pcr.fit(
-            np.concatenate([X_train[:, :self.n_windows],
+            np.concatenate([X_train[:, :self.n_columns],
                             X_train_reduced[:, :n_components_pcr]],
                            axis=-1),
             y_train)
         X_test_reduced\
-            = pca.transform(X_test[:, self.n_windows:])[:, :n_components_pcr]
-        X_test_reduced = np.concatenate([X_test[:, :self.n_windows],
+            = pca.transform(X_test[:, self.n_columns:])[:, :n_components_pcr]
+        X_test_reduced = np.concatenate([X_test[:, :self.n_columns],
                                          X_test_reduced],
                                         axis=-1)
         y_pred = linear_regressor_pcr.predict(X_test_reduced)

@@ -8,13 +8,13 @@ import warnings
 from oil_forecastor.model_selection import denoising_func
 from r2_oos import evaluation
 import sys
-from sklearn.exceptions import DataConversionWarning
-
+import glob
+from sklearn.exceptions import ConvergenceWarning
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '--data-path',
-    default='../data/logvol_ml_data_W.csv', type=str,
+    default='../data', type=str,
     help="path to data"
 )
 parser.add_argument('--without-epu', type=bool)
@@ -33,7 +33,7 @@ parser.add_argument('--true-path',
                     default='../data/your_path.csv', type=str,
                     help='path to the data which is unfiltered')
 parser.add_argument('--n-columns',
-                    default=2, type=int,
+                    default=3, type=int,
                     help='# of first n-columns that must be included')
 parser.add_argument('--run-arima', default=False, type=bool)
 arguments = parser.parse_args()
@@ -52,7 +52,7 @@ else:
 
 if arguments.ignore_warnings:
     print("Ignore sklearn warnings")
-    warnings.filterwarnings(action='ignore', category=DataConversionWarning)
+    warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 else:
     print("Do not ignore sklearn warnings")
 
@@ -103,15 +103,6 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
         name_lin_reg = make_name("arima", csv_name,
                                  sw_tuple, n_features, arguments)
         res_pipe.to_csv(name_lin_reg + ".csv")
-    # #
-    # print("pipe")
-    # res_pipe = ml_forecast.pipeline(n_features=n_features,
-    #                                 method=arguments.selector)
-    # r2_test, r2_true, mape = evaluation(res_pipe, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_pipe", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_pipe.to_csv(name_lin_reg + ".csv")
 
     print("lasso")
     res_lasso = ml_forecast.lasso(n_features=n_features,
@@ -160,28 +151,15 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
 
 
 if __name__ == '__main__':
-    path = arguments.data_path
-    arguments.true_path = path
-    if arguments.without_epu:
-        print("The model without epu. Are you sure?")
-        get_str = input().lower()
-        if get_str in ['yes', 'y']:
-            print("Proceed without EPU")
-        else:
-            print("Terminate")
-            sys.exit()
-        path.replace('_with_epu', '-without_epu')
-
-    y_true = None
-    if arguments.true_path != 'none':
+    paths = glob.glob(arguments.data_path + '/*.csv')
+    for path in paths:
+        arguments.true_path = path
         y_true = pd.read_csv(arguments.true_path)
         y_true = y_true.set_index('date')
         y_true.index = pd.DatetimeIndex(y_true.index)
         y_true = y_true['y_test']
         y_true = y_true.rename('y_true')
 
-    paths = [arguments.data_path]
-    for path in paths:
         exogenous = pd.read_csv(path)
         exogenous = exogenous.set_index('date')
         exogenous.index = pd.DatetimeIndex(exogenous.index)
@@ -198,11 +176,19 @@ if __name__ == '__main__':
         assert exogenous.columns[0] == 'y_test'
         assert exogenous.columns[1] == 'crude_future_daily_lag0'
 
+        if '_no_Q' in path:
+            print("Without quarterly")
+            arguments.n_columns = 2
+        else:
+            print("With quaterly")
+            arguments.n_columns = 3
+
         if arguments.n_columns == 2:
-            exogenous.columns[2] == "crude_oil_realized_M"
+            assert exogenous.columns[2] == "crude_oil_realized_M"
+            assert exogenous.columns[3] != "crude_oil_realized_Q"
         elif arguments.n_columns == 3:
-            exogenous.columns[2] == "crude_oil_realized_M"
-            exogenous.columns[3] == "crude_oil_realized_Q"
+            assert exogenous.columns[2] == "crude_oil_realized_M"
+            assert exogenous.columns[3] == "crude_oil_realized_Q"
         elif arguments.n_columns > 3:
             raise ValueError("Too many fixed columns ", arguments.n_columns)
         else:
@@ -226,65 +212,8 @@ if __name__ == '__main__':
             print(e)
 
         for filter_method in [arguments.filter_method]:
-            for n_features in [np.inf, 0, 1, 3, 10, 50]:
-                for sw_tuple in [(arguments.n_samples, arguments.n_windows),
-                                 (26, 1)]:
+            for sw_tuple in [(arguments.n_samples, arguments.n_windows)]:
+                for n_features in [np.inf, 0, 10, 20]:
                     copied = copy.deepcopy(exogenous)
                     main(copied, filter_method, n_features, sw_tuple,
                          os.path.basename(path).replace('.csv', ''), y_true)
-
-    # print("ard")
-    # res_els = ml_forecast.ard(
-    #     n_features=n_features, method=arguments.selector
-    # )
-    # r2_test, r2_true = evaluation(res_els, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-
-    # print("bayes")
-    # res_els = ml_forecast.bayes(
-    #     n_features=n_features, method=arguments.selector
-    # )
-    # r2_test, r2_true = evaluation(res_els, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-
-    # print("pipe")
-    # res_pipe = ml_forecast.pipeline(n_features=n_features,
-    #                                 method=arguments.selector)
-    # r2_test, r2_true = evaluation(res_pipe, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_pipe", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_pipe.to_csv(name_lin_reg + ".csv")
-
-    # print("huber")
-    # res_els = ml_forecast.huber(
-    #     n_features=n_features, method=arguments.selector
-    # )
-    # r2_test, r2_true = evaluation(res_els, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-
-    # print("svr")
-    # if n_features > 100:
-    #     res_svr = ml_forecast.svr(n_features=50, method=arguments.selector)
-    # else:
-    #     res_svr = ml_forecast.svr(n_features=n_features,
-    #                               method=arguments.selector)
-    # r2_test, r2_true = evaluation(res_svr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_svr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_svr.to_csv(name_lin_reg + ".csv")
-
-    # print("kr")
-    # if n_features > 100:
-    #     res_kr = ml_forecast.kernel_ridge(n_features=50,
-    #                                       method=arguments.selector)
-    # else:
-    #     res_kr = ml_forecast.kernel_ridge(
-    #         n_features=n_features, method=arguments.selector
-    #     )
-    # r2_test, r2_true = evaluation(res_kr, y_true)
-    # print('r2 test {}, r2 true {}'.format(r2_test, r2_true))
-    # name_lin_reg = make_name("res_kr", csv_name,
-    #                          sw_tuple, n_features, arguments)
-    # res_kr.to_csv(name_lin_reg + ".csv")
