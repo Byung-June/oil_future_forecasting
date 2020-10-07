@@ -5,7 +5,7 @@ from sklearn.metrics import r2_score
 from scipy.stats import t, norm
 from statsmodels.tsa.stattools import adfuller
 import os
-
+import re
 
 
 def dm_test(true, pred1, pred2, h, err_type='MSE'):
@@ -63,13 +63,13 @@ def pt_test(true, pred):
     return P_hat, p_value
 
 
-def r2_oos_func(data_, type='tsa', test_type='ladder'):
-    if type=='tsa':
+def r2_oos_func(data_, type='ARIMA', test_type='ladder'):
+    if type=='ARIMA':
         data_ = pd.read_csv(data_, index_col=1)
         data_ = data_.drop(columns=['Unnamed: 0'])
         data_ = data_.dropna(axis=0)
     else:
-        # type=='ml'
+        # type=='ML'
         data_ = pd.read_csv(data_, index_col=0)
         data_ = data_.dropna(axis=0)
 
@@ -79,11 +79,13 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
     unit_root_test = [adfuller(y_pred - y_test)[1]]
 
     # only for w=5, s=5
-    bench = os.getcwd() + '/logvol_arima_W_5_5_0.csv'
-    bench = pd.read_csv(bench, index_col=1).drop(columns=['Unnamed: 0'])
+
+    bench = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_W' \
+            + '/res_linear_reg_windows_1_samples_52_scaler_none_features_0_none_without_epu_None.csv'
+    bench = pd.read_csv(bench, index_col=0).dropna(axis=0)
     bench = bench.iloc[:, 0]
     # assert (len(y_test) == len(bench)), print('check benchmark file time')
-    # d_result = dm_test(y_test, bench, y_pred, h=1, err_type='MSE')[1]
+    d_result = dm_test(y_test[-len(bench):], bench, y_pred[-len(bench):], h=1, err_type='MSE')[1]
 
     y_t = y_test.shift(1)
     pt_y = y_test - y_t
@@ -140,13 +142,15 @@ def r2_oos_func(data_, type='tsa', test_type='ladder'):
             p_hat.append(pt_result[0])
             pt_p_value.append(pt_result[1])
             time.append(y_test.index[0])
+    unit_root_test = [(np.round(x * 10**-np.floor(np.log10(x)), 3), np.floor(np.log10(x))) for x in unit_root_test]
+    r2_result = [str(x) + ' (' + str(y[0]) + 'e' + str(y[1]) + ')' for x, y in zip(np.round(r2_oos, 3), unit_root_test)]
+    pt_result = [str(x) + ' (' + str(y) + ')' for x, y in zip(np.round(p_hat, 3), np.round(pt_p_value, 3))]
 
     return (
         time,
-        np.round(r2_oos, 3),
-        (np.round(p_hat, 3), np.round(pt_p_value, 3)),
-        # np.round(d_result, 3),
-        unit_root_test
+        r2_result,
+        pt_result,
+        np.round(d_result, 3)
     )
 
 
@@ -198,69 +202,73 @@ def evaluation(df, y_true, delete_outlier=False):
     return r2_score(y_test, y_pred), r2_true, mape
 
 
+def result_table(data_list, test_type, data_type='ARIMA'):
+    table = []
+    for data in data_list:
+        text = re.split(r'\\', data)[-1]
+        text = re.split('.cs', text)[0]
+        text = re.split('_', text)
+        if data_type == 'ARIMA':
+            model = text[1]
+            if 'epu' in text: model = model + '_without_epu'
+            w, s, f = text[-3:]
+            if int(f) > 0: f = int(f)-2
+            else: f = f + '^*'
+        elif data_type == 'ML':
+            model = text[1]
+            b = []
+            for x in text:
+                try:
+                    b.append(int(x))
+                except ValueError:
+                    pass
+            if len(b) == 2:
+                f = 'all'
+            else:
+                f = b[2]
+        else:
+            raise ValueError
+
+        _, r2_result, pt_result, dm_result = r2_oos_func(data, type=data_type, test_type=test_type)
+        row = [model, f]
+        row.extend(r2_result)
+        row.extend([pt_result[0], dm_result])
+        table.append(row)
+    table = pd.DataFrame(table, columns=['Model', 'Number of Feature Selection',
+                                         '$R^2_{oos}$', '$R^2_{oos, 10}$', '$R^2_{oos, 5}$', '$R^2_{oos, 3}$',
+                                         '$R^2_{oos, 2}$', '$R^2_{oos, 1}$', 'PT test', 'DM test'])
+    print(table)
+    return table
+
 if __name__ == "__main__":
     path_tsa = os.getcwd()
     file = '\*.csv'
     test_type = 'ladder'
     # test_type = 'step'
 
-    print('--------------------------------------')
-    print('ARIMAX')
-    print('--------------------------------------')
-    data_list_tsa = glob.glob(path_tsa + file)
-    for data in data_list_tsa:
-        print('--------------------------------------')
-        print(data)
-        result = r2_oos_func(data, test_type=test_type)
-        print(result[0])
-        print(result[1])
-        print(result[2])
-        print(result[3])
+    # print('--------------------------------------')
+    # print('ARIMAX')
+    # print('--------------------------------------')
+    # data_list_tsa = glob.glob(path_tsa + file)
+    # arima_result = result_table(data_list_tsa, test_type=test_type, data_type='ARIMA')
+    # arima_result.to_csv('result_table//arima_result.csv')
 
     print('--------------------------------------')
-    print('Machine Learning with all')
+    print('Machine Learning')
     print('--------------------------------------')
 
     # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\selected\logvol_ml_data_W'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_no_Q_W'
     data_list_ml = glob.glob(path_ml + file)
-    for data in data_list_ml:
-        print('--------------------------------------')
-        print(data)
-        result = r2_oos_func(data, type='ml', test_type=test_type)
-        print(result[0])
-        print(result[1])
-        print(result[2])
-        print(result[3])
+    ml_result = result_table(data_list_ml, test_type=test_type, data_type='ML')
+    ml_result.to_csv('result_table//ml_result.csv')
 
     print('--------------------------------------')
-    print('Machine Learning without Q')
+    print('Machine Learning without EPU')
     print('--------------------------------------')
 
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\selected\logvol_ml_data_no_Q_W'
+    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_W_no_epu_no_Q'
     data_list_ml = glob.glob(path_ml + file)
-    for data in data_list_ml:
-        print('--------------------------------------')
-        print(data)
-        result = r2_oos_func(data, type='ml', test_type=test_type)
-        print(result[0])
-        print(result[1])
-        print(result[2])
-        print(result[3])
-
-    # print('--------------------------------------')
-    # print('Machine Learning without EPU')
-    # print('--------------------------------------')
-    #
-    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_har_ml_data_W'
-    # data_list_ml = glob.glob(path_ml + file)
-    # for data in data_list_ml:
-    #     print('--------------------------------------')
-    #     print(data)
-    #     result = r2_oos_func(data, type='ml', test_type=test_type)
-    #     print(result[0])
-    #     print(result[1])
-    #     print(result[2])
-    #     print(result[3])
+    ml_result_without_epu = result_table(data_list_ml, test_type=test_type, data_type='ML')
+    ml_result_without_epu.to_csv('result_table//ml_without_epu_result.csv')

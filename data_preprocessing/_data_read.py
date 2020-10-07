@@ -157,8 +157,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_y['y_test'] = df_y['y_test'].shift(-1)
     print('weekly realized vol', df_y)
 
-    col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 5:])
-    df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 5:], col_stationary_index, col_stationary_diff),
+    col_stationary_index, col_stationary_diff = stationary_df(df_d.iloc[:, 1:])
+    df_d = pd.merge(df_y, make_stationary(df_d.iloc[:, 1:], col_stationary_index, col_stationary_diff),
                     left_index=True, right_index=True, how='outer')
     df_d = fill_bs_date(b_index, df_d)
 
@@ -196,9 +196,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')
     df = pd.merge(df, df_m, left_index=True, right_index=True, how='left')
     df = df[['y_test', 'crude_future_daily_lag0', 'crude_oil_realized_M', 'crude_oil_realized_Q',
-             # 'crude_oil_realized_W',
              'cumulative_return',
-             # 'bpv', 'tq', 'z_tq',
              'wti_spot_daily', 'ngl_spot_daily',
              'ngl_furture_daily', 'brent_spot_daily',
              'cur_weekly',

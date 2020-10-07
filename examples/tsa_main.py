@@ -89,8 +89,9 @@ if __name__ == '__main__':
     # data = pd.read_csv('../data_preprocessing/bi_vol_ml_data_M_w3_d10_i10.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_M_no_epu.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
-    data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
-    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W_no_Q.csv', index_col=0)
+    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
+    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_no_Q_W.csv', index_col=0)
+    data = pd.read_csv('../data_preprocessing/logvol_ml_data_W_no_epu_no_Q.csv', index_col=0)
     fix_feature_num = 2
     try:
         data = data.drop(['crude_future_daily_lag0'], axis=1)
@@ -102,22 +103,20 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     wsf_list = [
-        [5, 5, 0],
-        [5, 5, 2],
-        [5, 5, 10],
-        [5, 5, 50],
-        [4, 8, 0],
-        [4, 13, 0],
-        [4, 26, 0],
-        [4, 52, 0],
-        [4, 52, 2],
-        [4, 52, 10],
-        [4, 52, 50],
-        [1,  52, 0],
-        [1, 52, 2],
-        [1, 52, 10],
-        [1, 52, 50]
+        [4, 5, 0],
+        [4, 5, 2],
+        [4, 5, 12],
+        [4, 5, 22],
+        # [1,  5, 0],
+        # [1, 5, 2],
+        # [1, 5, 12],
+        # [1, 5, 22],
+        # [5, 52, 0],
+        # [5, 52, 2],
+        # [5, 52, 12],
+        # [5, 52, 22]
     ]
+
 
     for w, s, f in wsf_list:
         input_w = w
@@ -126,7 +125,6 @@ if __name__ == '__main__':
         g = GenModel(data, window_num=input_w, sample_num=input_s, forecast_period=1, feature_num=input_f,
                      denoise=None, fix_feature_num=fix_feature_num)
         arma = pd.DataFrame(g.gen_model('arima', process_num=4))
-        # arma.to_csv('rvol_arima_W_%s_%s_%s_no_epu.csv' % (input_w, input_s, input_f))
         # arma.to_csv('logvol_arima_W_noQ_%s_%s_%s.csv' % (input_w, input_s, input_f))
-        arma.to_csv('logvol_arima_W_%s_%s_%s.csv' % (input_w, input_s, input_f))
+        arma.to_csv('logvol_arima_W_no_Q_no_epu_%s_%s_%s.csv' % (input_w, input_s, input_f))
         print('result', arma)
