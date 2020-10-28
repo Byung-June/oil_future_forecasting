@@ -268,7 +268,7 @@ if __name__ == "__main__":
     print('--------------------------------------')
 
     # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_W_no_epu_no_Q'
+    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/results\logvol_ml_data_W_no_epu_no_Q'
     data_list_ml = glob.glob(path_ml + file)
     ml_result_without_epu = result_table(data_list_ml, test_type=test_type, data_type='ML')
     ml_result_without_epu.to_csv('result_table//ml_without_epu_result.csv')

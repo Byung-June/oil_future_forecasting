@@ -144,7 +144,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
         df_y = resample_df(df_y, freq='M', method='sum')
     b_index = df_y.index
     df_y['y_test'] = np.sqrt(df_y['y_test'])
-    df_y['cumulative_return'] = np.abs(df_y['cumulative_return'])
+    df_y['cumulative_return'] = df_y['cumulative_return']
 
     if freq == 'D':
         df_y['crude_oil_realized_W'] = df_y['y_test'].rolling(5).mean()
@@ -224,9 +224,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 if __name__ == '__main__':
     # gen_data(filename='return_ml_data_W.csv', freq='W', filter=None, y_type='return')
     # gen_data(filename='return_ma_ml_data_W.csv', freq='W', filter='moving_average', y_type='return')
-
-    gen_data(filename='logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
+    gen_data(filename='test_logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
     # gen_data(filename='logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
-
     # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='vol')
     # gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')
+

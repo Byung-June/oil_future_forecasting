@@ -13,7 +13,6 @@ def stationary_df(df_):
 
     for col_num in np.arange(len(df_.columns)):
         col = df_.iloc[:, col_num]
-        # print(col)
         try:
             col_diff = adf_test(col)
             col_diff = max(col_diff)
@@ -36,7 +35,10 @@ def make_stationary(df_, col_stationary_index_, col_stationary_diff_):
             if col_diff > 0:
                 print('%s th column is wrong' % str(col_num))
         elif col_index == 1:
-            df_.iloc[:, col_num] = df_.iloc[:, col_num].diff(col_diff)
+            if col_diff == 1:
+                df_.iloc[:, col_num] = df_.iloc[:, col_num].diff()
+            if col_diff == 2:
+                df_.iloc[:, col_num] = df_.iloc[:, col_num].diff().diff()
         else:
             print('%s th column is wrong with string type input' % str(col_num))
     return df_
