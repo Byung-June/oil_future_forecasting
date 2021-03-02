@@ -6,7 +6,7 @@ import multiprocessing
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Lasso, LinearRegression, \
-    BayesianRidge, HuberRegressor, ARDRegression
+    BayesianRidge, HuberRegressor, ARDRegression, ElasticNet
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 # from sklearn.ensemble import HistGradientBoostingRegressor
@@ -381,6 +381,14 @@ class MLForecast():
         #                                 min_samples_split=4)
         # gbr.fit(X_train, y_train)
         # y_pred = gbr.predict(X_test)
+        return y_pred
+
+    @rolling
+    def elastic_net(self, train_test, n_features=np.inf, method=None):
+        X_train, X_test, y_train, y_test = train_test
+        linear_regressor = ElasticNet()
+        linear_regressor.fit(X_train, y_train)
+        y_pred = linear_regressor.predict(X_test)
         return y_pred
 
     def arima_pipe(self, train_test, n_features=0):
