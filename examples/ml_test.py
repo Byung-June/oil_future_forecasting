@@ -6,7 +6,7 @@ import pandas as pd
 import argparse
 import warnings
 from oil_forecastor.model_selection import denoising_func
-from r2_oos import evaluation
+from examples.r2_oos import evaluation
 import sys
 import glob
 from sklearn.exceptions import ConvergenceWarning
@@ -187,8 +187,11 @@ if __name__ == '__main__':
             assert exogenous.columns[2] == "crude_oil_realized_M"
             assert exogenous.columns[3] != "crude_oil_realized_Q"
         elif arguments.n_columns == 3:
-            assert exogenous.columns[2] == "crude_oil_realized_M"
-            assert exogenous.columns[3] == "crude_oil_realized_Q"
+            assert (exogenous.columns[2] == "crude_oil_realized_M"
+                    and exogenous.columns[3] == "crude_oil_realized_Q") \
+                   or (exogenous.columns[2] == "crude_oil_realized_Q"
+                       and exogenous.columns[3] == "crude_oil_realized_Y")
+
         elif arguments.n_columns > 3:
             raise ValueError("Too many fixed columns ", arguments.n_columns)
         else:

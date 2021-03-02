@@ -5,6 +5,9 @@ from pmdarima.arima import ndiffs
 from pandas.tseries.offsets import QuarterBegin, QuarterEnd
 from .hand_select import hand_select
 import pandas_datareader.data as web
+import xlrd, csv
+from openpyxl.workbook import Workbook
+from openpyxl.reader.excel import load_workbook, InvalidFileException
 
 
 def set_date_as_index(df):
@@ -75,22 +78,54 @@ def make_stationary(df):
     return df
 
 
+def open_xls_as_xlsx(filename):
+    # first open using xlrd
+    book = xlrd.open_workbook(filename)
+    index = 0
+    nrows, ncols = 0, 0
+    while nrows * ncols == 0:
+        sheet = book.sheet_by_index(index)
+        nrows = sheet.nrows
+        ncols = sheet.ncols
+        index += 1
+
+    # prepare a xlsx sheet
+    book1 = Workbook()
+    sheet1 = book1.active
+
+    for row in range(1, nrows):
+        for col in range(1, ncols):
+            sheet1.cell(row=row, column=col).value = sheet.cell_value(row, col)
+
+    return book1
+
+
 def read_data(path, sheet=False, header='infer'):
+    file_format = path.split('.')[-1]
     if 'msci' in path:
         header = 6
     if sheet is False:
+        # if file_format == 'csv':
+        #     df = pd.read_csv(path, header=header)
+        # elif file_format == 'xls':
+        #     df = open_xls_as_xlsx(path)
+        # else:
         try:
-            df = pd.read_excel(path, header=header)
+            df = pd.read_excel(path, header=header, engine='openpyxl')
         except Exception:
             try:
-                df = pd.read_csv(path, header=header)
+                df = open_xls_as_xlsx(path)
             except Exception as e:
-                raise Exception(e)
+                try:
+                    df = pd.read_csv(path, header=header)
+                except Exception as e:
+                    raise Exception(e)
     else:
         try:
-            excel_file = pd.ExcelFile(path)
-            assert sheet in excel_file.sheet_names
-            df = excel_file.parse(sheet, header=header)
+            # excel_file = pd.ExcelFile(path)
+            # assert sheet in excel_file.sheet_names
+            # df = excel_file.parse(sheet, header=header)
+            df = pd.read_excel(path, header=header, engine='openpyxl', sheet_name=sheet)
         except Exception:
             raise Exception("Can not read sheet")
 
@@ -455,7 +490,8 @@ def get_financial():
     fed_funds = daily_data(fed_funds, 'monthly', offset=False)
 
     print('msci')
-    msci_data = read_data('../data/financial_market_monthly/msciworld.xls')
+    msci_data = read_data('../data/financial_market_monthly/msciworld.xlsx')
+    msci_data = msci_data.dropna()
     msci_data = daily_data(msci_data, 'monthly', offset=False)
 
     df = pd.concat([df, fed_funds, msci_data], axis=1, sort=False)

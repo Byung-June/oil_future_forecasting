@@ -12,7 +12,7 @@ def stationary_df(df_):
     col_stationary_diff = np.zeros(len(df_.columns))
 
     for col_num in np.arange(len(df_.columns)):
-        col = df_.iloc[:, col_num]
+        col = df_.iloc[:, col_num].dropna()
         try:
             col_diff = adf_test(col)
             col_diff = max(col_diff)

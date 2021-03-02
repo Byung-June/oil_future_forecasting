@@ -149,9 +149,12 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     if freq == 'D':
         df_y['crude_oil_realized_W'] = df_y['y_test'].rolling(5).mean()
         df_y['crude_oil_realized_M'] = df_y['y_test'].rolling(22).mean()
-    if freq == 'W':
+    elif freq == 'W':
         df_y['crude_oil_realized_M'] = df_y['y_test'].rolling(4).mean()
         df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(13).mean()
+    elif freq == 'M':
+        df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(13).mean()
+        df_y['crude_oil_realized_Y'] = df_y['y_test'].rolling(52).mean()
 
     df_y['crude_future_daily_lag0'] = df_y['y_test'].values
     df_y['y_test'] = df_y['y_test'].shift(-1)
@@ -195,14 +198,25 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     # Merge (Freq)
     df = pd.merge(df_d, df_w, left_index=True, right_index=True, how='left')
     df = pd.merge(df, df_m, left_index=True, right_index=True, how='left')
-    df = df[['y_test', 'crude_future_daily_lag0', 'crude_oil_realized_M', 'crude_oil_realized_Q',
-             'cumulative_return',
-             'wti_spot_daily', 'ngl_spot_daily',
-             'ngl_furture_daily', 'brent_spot_daily',
-             'cur_weekly',
-             'CRUDEOIL_closingstock_total', 'CRUDEOIL_export_total', 'CRUDEOIL_import_total',
-             'CRUDEOIL_prod_total', 'production_cap_total', 'consump_world_M',
-             'PPI_china_monthly', 'PPI_usa_monthly', 'PPI_eu_monthly']]
+
+    if freq == 'W':
+        df = df[['y_test', 'crude_future_daily_lag0', 'crude_oil_realized_M', 'crude_oil_realized_Q',
+                 'cumulative_return',
+                 'wti_spot_daily', 'ngl_spot_daily',
+                 'ngl_furture_daily', 'brent_spot_daily',
+                 'cur_weekly',
+                 'CRUDEOIL_closingstock_total', 'CRUDEOIL_export_total', 'CRUDEOIL_import_total',
+                 'CRUDEOIL_prod_total', 'production_cap_total', 'consump_world_M',
+                 'PPI_china_monthly', 'PPI_usa_monthly', 'PPI_eu_monthly']]
+    elif freq == 'M':
+        df = df[['y_test', 'crude_future_daily_lag0', 'crude_oil_realized_Q', 'crude_oil_realized_Y',
+                 'cumulative_return',
+                 'wti_spot_daily', 'ngl_spot_daily',
+                 'ngl_furture_daily', 'brent_spot_daily',
+                 'cur_weekly',
+                 'CRUDEOIL_closingstock_total', 'CRUDEOIL_export_total', 'CRUDEOIL_import_total',
+                 'CRUDEOIL_prod_total', 'production_cap_total', 'consump_world_M',
+                 'PPI_china_monthly', 'PPI_usa_monthly', 'PPI_eu_monthly']]
     df = df.fillna(method='ffill')
 
     # Merge EPU data
@@ -224,7 +238,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 if __name__ == '__main__':
     # gen_data(filename='return_ml_data_W.csv', freq='W', filter=None, y_type='return')
     # gen_data(filename='return_ma_ml_data_W.csv', freq='W', filter='moving_average', y_type='return')
-    gen_data(filename='test_logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
+    gen_data(filename='logvol_ml_data_M.csv', freq='M', filter=None, y_type='logvol')
     # gen_data(filename='logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
     # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='vol')
     # gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')

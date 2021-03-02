@@ -10,5 +10,5 @@ setup(
     packages=find_packages(),
     install_requires=['pandas', 'numpy', 'pmdarima',
                       'tqdm', 'arch', 'scikit-learn',
-                      'pandas-datareader', 'scikit-image']
+                      'pandas-datareader', 'scikit-image', 'openpyxl', 'xlrd']
 )
