@@ -91,7 +91,9 @@ if __name__ == '__main__':
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W.csv', index_col=0)
     # data = pd.read_csv('../data_preprocessing/logvol_ml_data_no_Q_W.csv', index_col=0)
-    data = pd.read_csv('../data_preprocessing/logvol_ml_data_W_no_epu_no_Q.csv', index_col=0)
+    # data = pd.read_csv('../data_preprocessing/logvol_ml_data_W_no_epu_no_Q.csv', index_col=0)
+    data = pd.read_csv('../data/logvol_data_M.csv', index_col=0)
+    # data = pd.read_csv('../data/logvol_data_M_no_epu.csv', index_col=0)
     fix_feature_num = 2
     try:
         data = data.drop(['crude_future_daily_lag0'], axis=1)
@@ -126,5 +128,7 @@ if __name__ == '__main__':
                      denoise=None, fix_feature_num=fix_feature_num)
         arma = pd.DataFrame(g.gen_model('arima', process_num=4))
         # arma.to_csv('logvol_arima_W_noQ_%s_%s_%s.csv' % (input_w, input_s, input_f))
-        arma.to_csv('logvol_arima_W_no_Q_no_epu_%s_%s_%s.csv' % (input_w, input_s, input_f))
+        # arma.to_csv('logvol_arima_W_no_Q_no_epu_%s_%s_%s.csv' % (input_w, input_s, input_f))
+        arma.to_csv('logvol_arima_M_%s_%s_%s.csv' % (input_w, input_s, input_f))
+        # arma.to_csv('logvol_arima_M_no_epu_%s_%s_%s.csv' % (input_w, input_s, input_f))
         print('result', arma)

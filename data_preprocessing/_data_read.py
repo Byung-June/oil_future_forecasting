@@ -53,14 +53,14 @@ def column_fill_name(columns, new_columns):
 
 def resample_df(df_, freq='W', method='last'):
     df_2 = copy.deepcopy(df_)
-    df_3 = copy.deepcopy(df_2.iloc[:, 0])
+    # df_3 = copy.deepcopy(df_2.iloc[:, 0])
     if method == 'sum':
         df_2 = df_2.assign(date=df_.index).resample(freq).sum()
     else:
         df_2 = df_2.assign(date=df_.index).resample(freq).last()
-    m = df_3.index.to_period(freq)
-    df_3 = df_3.reset_index().groupby(m).last().set_index('date')
-    df_2.index = df_3.index
+    # m = df_3.index.to_period(freq)
+    # df_3 = df_3.reset_index().groupby(m).last().set_index('date')
+    # df_2.index = df_3.index
     return df_2
 
 
@@ -140,7 +140,9 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 
     if freq == 'W':
         df_y = resample_df(df_y, freq='W', method='sum')
-    if freq == 'M':
+    elif freq == '2W':
+        df_y = resample_df(df_y, freq='2W', method='sum')
+    elif freq == 'M':
         df_y = resample_df(df_y, freq='M', method='sum')
     b_index = df_y.index
     df_y['y_test'] = np.sqrt(df_y['y_test'])
@@ -152,9 +154,12 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     elif freq == 'W':
         df_y['crude_oil_realized_M'] = df_y['y_test'].rolling(4).mean()
         df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(13).mean()
+    elif freq == '2W':
+        df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(6).mean()
+        df_y['crude_oil_realized_Y'] = df_y['y_test'].rolling(26).mean()
     elif freq == 'M':
-        df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(13).mean()
-        df_y['crude_oil_realized_Y'] = df_y['y_test'].rolling(52).mean()
+        df_y['crude_oil_realized_Q'] = df_y['y_test'].rolling(3).mean()
+        df_y['crude_oil_realized_Y'] = df_y['y_test'].rolling(12).mean()
 
     df_y['crude_future_daily_lag0'] = df_y['y_test'].values
     df_y['y_test'] = df_y['y_test'].shift(-1)
@@ -170,6 +175,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
     df_w = df_slicing(fill_bs_date(b_index, df_w).dropna(), start=start_date, end=end_date)
     if freq == 'M':
         df_w = resample_df(df_w, freq='M')
+    if freq == '2W':
+        df_w = resample_df(df_w, freq='2W')
     col_stationary_index, col_stationary_diff = stationary_df(df_w)
     df_w = make_stationary(df_w, col_stationary_index, col_stationary_diff)
 
@@ -208,7 +215,7 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
                  'CRUDEOIL_closingstock_total', 'CRUDEOIL_export_total', 'CRUDEOIL_import_total',
                  'CRUDEOIL_prod_total', 'production_cap_total', 'consump_world_M',
                  'PPI_china_monthly', 'PPI_usa_monthly', 'PPI_eu_monthly']]
-    elif freq == 'M':
+    elif freq == 'M' or freq == '2W':
         df = df[['y_test', 'crude_future_daily_lag0', 'crude_oil_realized_Q', 'crude_oil_realized_Y',
                  'cumulative_return',
                  'wti_spot_daily', 'ngl_spot_daily',
@@ -238,7 +245,8 @@ def gen_data(filename, freq='D', start_date='2002-03-30', end_date='2020-06-01',
 if __name__ == '__main__':
     # gen_data(filename='return_ml_data_W.csv', freq='W', filter=None, y_type='return')
     # gen_data(filename='return_ma_ml_data_W.csv', freq='W', filter='moving_average', y_type='return')
-    gen_data(filename='logvol_ml_data_M.csv', freq='M', filter=None, y_type='logvol')
+    # gen_data(filename='logvol_data_M.csv', freq='M', filter=None, y_type='logvol')
+    gen_data(filename='logvol_data_2W.csv', freq='2W', filter=None, y_type='logvol')
     # gen_data(filename='logvol_ml_data_W.csv', freq='W', filter=None, y_type='logvol')
     # gen_data(filename='vol_ml_data_W.csv', freq='W', filter=None, y_type='vol')
     # gen_data(filename='vol_ml_data_M.csv', freq='M', filter=None, y_type='vol')

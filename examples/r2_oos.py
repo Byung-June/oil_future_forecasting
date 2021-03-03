@@ -80,11 +80,13 @@ def r2_oos_func(data_, type='ARIMA', test_type='ladder'):
 
     # only for w=5, s=5
 
-    bench = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_W' \
+    bench = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_data_M' \
             + '/res_linear_reg_windows_1_samples_52_scaler_none_features_0_none_without_epu_None.csv'
     bench = pd.read_csv(bench, index_col=0).dropna(axis=0)
     bench = bench.iloc[:, 0]
     # assert (len(y_test) == len(bench)), print('check benchmark file time')
+    if len(bench) > len(y_test):
+        bench = bench[-len(y_test):]
     d_result = dm_test(y_test[-len(bench):], bench, y_pred[-len(bench):], h=1, err_type='MSE')[1]
 
     y_t = y_test.shift(1)
@@ -130,7 +132,7 @@ def r2_oos_func(data_, type='ARIMA', test_type='ladder'):
                 time.append(y_test.index[0])
 
     if test_type == 'ladder':
-        for n_dates in (np.array([10, 5, 3, 2, 1]) * 52):
+        for n_dates in (np.array([10, 5, 3, 2, 1]) * 12):   ########## 12 for month, 52 for week
             y_pred = data_.iloc[-n_dates:, 0]
             y_test = data_.iloc[-n_dates:, 1]
             r2_oos.append(r2_score(y_test, y_pred))
@@ -205,6 +207,9 @@ def evaluation(df, y_true, delete_outlier=False):
 def result_table(data_list, test_type, data_type='ARIMA'):
     table = []
     for data in data_list:
+        # if data.split('.')[0][-6:] == '5_52_0':
+        #     print(1)
+        print(data)
         text = re.split(r'\\', data)[-1]
         text = re.split('.cs', text)[0]
         text = re.split('_', text)
@@ -246,29 +251,31 @@ if __name__ == "__main__":
     test_type = 'ladder'
     # test_type = 'step'
 
+    print('--------------------------------------')
+    print('ARIMAX')
+    print('--------------------------------------')
+    data_list_tsa = glob.glob(path_tsa + file)
+    arima_result = result_table(data_list_tsa, test_type=test_type, data_type='ARIMA')
+    arima_result.to_csv('result_table//arima_result_M.csv')
+
     # print('--------------------------------------')
-    # print('ARIMAX')
+    # print('Machine Learning')
     # print('--------------------------------------')
-    # data_list_tsa = glob.glob(path_tsa + file)
-    # arima_result = result_table(data_list_tsa, test_type=test_type, data_type='ARIMA')
-    # arima_result.to_csv('result_table//arima_result.csv')
-
-    print('--------------------------------------')
-    print('Machine Learning')
-    print('--------------------------------------')
-
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_no_Q_W'
-    data_list_ml = glob.glob(path_ml + file)
-    ml_result = result_table(data_list_ml, test_type=test_type, data_type='ML')
-    ml_result.to_csv('result_table//ml_result.csv')
-
-    print('--------------------------------------')
-    print('Machine Learning without EPU')
-    print('--------------------------------------')
-
-    # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
-    path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/results\logvol_ml_data_W_no_epu_no_Q'
-    data_list_ml = glob.glob(path_ml + file)
-    ml_result_without_epu = result_table(data_list_ml, test_type=test_type, data_type='ML')
-    ml_result_without_epu.to_csv('result_table//ml_without_epu_result.csv')
+    #
+    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M'
+    # # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_results\logvol_ml_data_no_Q_W'
+    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_data_M'
+    # data_list_ml = glob.glob(path_ml + file)
+    # ml_result = result_table(data_list_ml, test_type=test_type, data_type='ML')
+    # ml_result.to_csv('result_table//ml_result_M.csv')
+    #
+    # print('--------------------------------------')
+    # print('Machine Learning without EPU')
+    # print('--------------------------------------')
+    #
+    # # path_ml = 'C:/Users/junelap/Dropbox/6_git_repository/oil_future_forecasting/results/vol_ml_data_M_no_epu'
+    # # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results/results\logvol_ml_data_W_no_epu_no_Q'
+    # path_ml = 'D:\Dropbox/6_git_repository\oil_future_forecasting/results\logvol_data_M_no_epu'
+    # data_list_ml = glob.glob(path_ml + file)
+    # ml_result_without_epu = result_table(data_list_ml, test_type=test_type, data_type='ML')
+    # ml_result_without_epu.to_csv('result_table//ml_without_epu_result_M.csv')
