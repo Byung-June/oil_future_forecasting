@@ -84,70 +84,70 @@ def main(exogenous, filter_method, n_features, sw_tuple, csv_name,
     ml_forecast = MLForecast(
         filtered, n_windows, n_samples, start_time, end_time,
         arguments.scaler, arguments.n_columns)
-
-    print("linear_reg")
-    res_linear_reg = ml_forecast.linear_reg(n_features=n_features,
-                                            method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_linear_reg, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_linear_reg", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_linear_reg.to_csv(name_lin_reg + ".csv")
-
-    if arguments.run_arima:
-        print("arima")
-        res_pipe = ml_forecast.arima(n_features=n_features,
-                                     method=arguments.selector)
-        r2_test, r2_true, mape = evaluation(res_pipe, y_true)
-        print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-        name_lin_reg = make_name("arima", csv_name,
-                                 sw_tuple, n_features, arguments)
-        res_pipe.to_csv(name_lin_reg + ".csv")
-
-    print("lasso")
-    res_lasso = ml_forecast.lasso(n_features=n_features,
-                                  method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_lasso, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lasso_reg\
-        = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
-    res_lasso.to_csv(name_lasso_reg + ".csv")
-
-    print("pcr")
-    res_pcr = ml_forecast.pcr(n_features=n_features,
-                              method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_pcr, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_pcr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_pcr.to_csv(name_lin_reg + ".csv")
-
-    print("dtr")
-    res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
-                                            method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_dtr, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_dtr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_dtr.to_csv(name_lin_reg + ".csv")
-
-    print("rfr")
-    res_rfr = ml_forecast.rand_forest_reg(n_features=n_features,
-                                          method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_rfr, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_rfr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_rfr.to_csv(name_lin_reg + ".csv")
-
-    print("gbr")
-    res_gbr = ml_forecast.grad_boost_reg(n_features=n_features,
-                                         method=arguments.selector)
-    r2_test, r2_true, mape = evaluation(res_gbr, y_true)
-    print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
-    name_lin_reg = make_name("res_gbr", csv_name,
-                             sw_tuple, n_features, arguments)
-    res_gbr.to_csv(name_lin_reg + ".csv")
+    #
+    # print("linear_reg")
+    # res_linear_reg = ml_forecast.linear_reg(n_features=n_features,
+    #                                         method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_linear_reg, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lin_reg = make_name("res_linear_reg", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_linear_reg.to_csv(name_lin_reg + ".csv")
+    #
+    # if arguments.run_arima:
+    #     print("arima")
+    #     res_pipe = ml_forecast.arima(n_features=n_features,
+    #                                  method=arguments.selector)
+    #     r2_test, r2_true, mape = evaluation(res_pipe, y_true)
+    #     print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    #     name_lin_reg = make_name("arima", csv_name,
+    #                              sw_tuple, n_features, arguments)
+    #     res_pipe.to_csv(name_lin_reg + ".csv")
+    #
+    # print("lasso")
+    # res_lasso = ml_forecast.lasso(n_features=n_features,
+    #                               method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_lasso, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lasso_reg\
+    #     = make_name("res_lasso_reg", csv_name, sw_tuple, n_features, arguments)
+    # res_lasso.to_csv(name_lasso_reg + ".csv")
+    #
+    # print("pcr")
+    # res_pcr = ml_forecast.pcr(n_features=n_features,
+    #                           method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_pcr, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lin_reg = make_name("res_pcr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_pcr.to_csv(name_lin_reg + ".csv")
+    #
+    # print("dtr")
+    # res_dtr = ml_forecast.decision_tree_reg(n_features=n_features,
+    #                                         method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_dtr, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lin_reg = make_name("res_dtr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_dtr.to_csv(name_lin_reg + ".csv")
+    #
+    # print("rfr")
+    # res_rfr = ml_forecast.rand_forest_reg(n_features=n_features,
+    #                                       method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_rfr, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lin_reg = make_name("res_rfr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_rfr.to_csv(name_lin_reg + ".csv")
+    #
+    # print("gbr")
+    # res_gbr = ml_forecast.grad_boost_reg(n_features=n_features,
+    #                                      method=arguments.selector)
+    # r2_test, r2_true, mape = evaluation(res_gbr, y_true)
+    # print('r2 test {}, r2 true {}, mape {}'.format(r2_test, r2_true, mape))
+    # name_lin_reg = make_name("res_gbr", csv_name,
+    #                          sw_tuple, n_features, arguments)
+    # res_gbr.to_csv(name_lin_reg + ".csv")
 
     print("eln")
     res_eln = ml_forecast.elastic_net(n_features=n_features,
@@ -195,11 +195,11 @@ if __name__ == '__main__':
         if arguments.n_columns == 2:
             assert exogenous.columns[2] == "crude_oil_realized_M"
             assert exogenous.columns[3] != "crude_oil_realized_Q"
-        elif arguments.n_columns == 3:
-            assert (exogenous.columns[2] == "crude_oil_realized_M"
-                    and exogenous.columns[3] == "crude_oil_realized_Q") \
-                   or (exogenous.columns[2] == "crude_oil_realized_Q"
-                       and exogenous.columns[3] == "crude_oil_realized_Y")
+        # elif arguments.n_columns == 3:
+        #     assert (exogenous.columns[2] == "crude_oil_realized_M"
+        #             and exogenous.columns[3] == "crude_oil_realized_Q") \
+        #            or (exogenous.columns[2] == "crude_oil_realized_Q"
+        #                and exogenous.columns[3] == "crude_oil_realized_Y")
 
         elif arguments.n_columns > 3:
             raise ValueError("Too many fixed columns ", arguments.n_columns)
